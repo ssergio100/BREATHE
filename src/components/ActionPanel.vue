@@ -75,8 +75,8 @@ defineEmits([
           </button>
         </template>
 
-        <!-- Botão Excluir em Lote (Habilitado apenas se mais de 1 branch selecionada) -->
-        <template v-if="selectedBranches.length > 1">
+        <!-- Botão Excluir (Habilitado se pelo menos 1 branch selecionada) -->
+        <template v-if="selectedBranches.length >= 1">
           <button
             @click="$emit('bulk-delete')"
             class="w-full py-4 px-2 rounded-[var(--app-input-radius)] border bg-red-500/10 border-red-500 text-red-650 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1 shrink-0 shadow-md"
