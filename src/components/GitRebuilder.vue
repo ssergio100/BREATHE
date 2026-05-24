@@ -9,6 +9,15 @@ import {
 import { useSettingsStore } from '../stores/settingsStore';
 import BaseModal from './BaseModal.vue';
 import AppInput from './base/AppInput.vue';
+import AppAvatar from './base/AppAvatar.vue';
+import AppBadge from './base/AppBadge.vue';
+import AppProgressBar from './base/AppProgressBar.vue';
+import AppRadio from './base/AppRadio.vue';
+import AppSelect from './base/AppSelect.vue';
+import AppSkeleton from './base/AppSkeleton.vue';
+import AppSwitch from './base/AppSwitch.vue';
+import AppTextarea from './base/AppTextarea.vue';
+import AppTimePicker from './base/AppTimePicker.vue';
 import TerminalConsole from './TerminalConsole.vue';
 import BranchList from './BranchList.vue';
 import ActionPanel from './ActionPanel.vue';
@@ -25,6 +34,30 @@ const totalBranchesCount = ref(0);
 
 let resolveDestruction = null;
 const waitingForDestruction = ref(false);
+
+// --- ESTADOS DE TESTE PARA A GALERIA DE COMPONENTES BASE ---
+const testSwitchVal = ref(false);
+const testSwitch2Val = ref(true);
+const testInputVal = ref('Texto de teste reativo');
+const testTextareaVal = ref('Exemplo de conteúdo para o componente base AppTextarea.');
+const testSelectVal = ref('op2');
+const testRadioVal = ref('rad1');
+const testProgressVal = ref(45);
+const testTimeVal = ref({ hours: 14, minutes: 30 });
+
+const selectOptions = [
+  { value: 'op1', label: 'Opção 1 - Breathe' },
+  { value: 'op2', label: 'Opção 2 - GitLab Integration' },
+  { value: 'op3', label: 'Opção 3 - Automatizado' }
+];
+
+const incrementProgress = () => {
+  if (testProgressVal.value < 100) testProgressVal.value += 5;
+};
+
+const decrementProgress = () => {
+  if (testProgressVal.value > 0) testProgressVal.value -= 5;
+};
 
 const confirmDestruction = () => {
   if (resolveDestruction) {
@@ -816,6 +849,17 @@ const toggleTheme = () => {
         </span>
         <div v-if="activeTab === 'merges'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-t-full"></div>
       </button>
+      <button 
+        @click="activeTab = 'base-components'"
+        class="py-4 text-xs font-black uppercase tracking-wider relative cursor-pointer transition-colors"
+        :class="activeTab === 'base-components' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+      >
+        <span class="flex items-center gap-2">
+          <Settings class="w-4 h-4" />
+          Componentes Base
+        </span>
+        <div v-if="activeTab === 'base-components'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-t-full"></div>
+      </button>
     </div>
 
     <main class="flex-1 md:overflow-hidden overflow-y-auto p-6 md:p-8 lg:py-6 lg:px-10 space-y-6 w-full max-w-full flex flex-col">
@@ -964,7 +1008,7 @@ const toggleTheme = () => {
     </div>
 
       <!-- ABA 2: MESCLAR E EXCLUIR BRANCHES -->
-      <div v-else class="space-y-6 animate-fadeIn flex-1 flex flex-col min-h-0 lg:overflow-hidden overflow-y-auto">
+      <div v-else-if="activeTab === 'merges'" class="space-y-6 animate-fadeIn flex-1 flex flex-col min-h-0 lg:overflow-hidden overflow-y-auto">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full flex-1 min-h-0">
 
           <!-- Coluna 1 (Lado Esquerdo): Branches Disponíveis (5 colunas) -->
@@ -1014,6 +1058,250 @@ const toggleTheme = () => {
               @decrease-font-size="decreaseFontSize"
               class="max-h-[calc(100vh-280px)]"
             />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ABA 3: COMPONENTES BASE -->
+      <div v-else-if="activeTab === 'base-components'" class="space-y-6 animate-fadeIn overflow-y-auto pr-2 custom-scrollbar flex-1 w-full max-w-full pb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- Card 1: Entradas de Dados (Inputs) -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Entradas de Dados</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Componentes AppInput e AppTextarea</p>
+            </div>
+            
+            <div class="space-y-4 flex-1">
+              <AppInput 
+                v-model="testInputVal" 
+                label="Campo de Texto Base" 
+                :icon="Settings" 
+                placeholder="Digite alguma coisa..." 
+              />
+              
+              <AppTextarea 
+                v-model="testTextareaVal" 
+                label="Campo de Texto Longo" 
+                :icon="Info" 
+                placeholder="Escreva um texto longo..." 
+                :rows="3"
+              />
+              
+              <!-- Estado em Tempo Real -->
+              <div class="p-3 bg-slate-100/50 dark:bg-white/5 rounded-xl border border-app-border-light space-y-2">
+                <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Model Value (Reativo)</span>
+                <p class="text-xs font-mono text-indigo-650 dark:text-indigo-400 truncate"><strong>Input:</strong> "{{ testInputVal }}"</p>
+                <p class="text-xs font-mono text-indigo-650 dark:text-indigo-400 truncate"><strong>Textarea:</strong> "{{ testTextareaVal }}"</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Seletores e Controles -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Seletores e Controles</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Componentes AppSelect, AppRadio e AppSwitch</p>
+            </div>
+            
+            <div class="space-y-5 flex-1">
+              <AppSelect 
+                v-model="testSelectVal" 
+                label="Seletor Dinâmico" 
+                :options="selectOptions" 
+                placeholder="Selecione uma opção..."
+              />
+              
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Opções Únicas (Radio)</label>
+                <div class="flex gap-4">
+                  <AppRadio v-model="testRadioVal" value="rad1" label="Opção Alpha" name="test-radios" />
+                  <AppRadio v-model="testRadioVal" value="rad2" label="Opção Beta" name="test-radios" />
+                </div>
+              </div>
+              
+              <div class="space-y-3 pt-1">
+                <AppSwitch 
+                  v-model="testSwitchVal" 
+                  label="Interruptor Principal" 
+                  description="Ativa ou desativa a simulação reativa."
+                />
+                <AppSwitch 
+                  v-model="testSwitch2Val" 
+                  label="Interruptor Secundário" 
+                  description="Iniciado por padrão como ativo."
+                />
+              </div>
+
+              <!-- Estado em Tempo Real -->
+              <div class="p-3 bg-slate-100/50 dark:bg-white/5 rounded-xl border border-app-border-light space-y-1">
+                <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Model Value (Reativo)</span>
+                <p class="text-xs font-mono text-indigo-650 dark:text-indigo-400"><strong>Select:</strong> "{{ testSelectVal }}"</p>
+                <p class="text-xs font-mono text-indigo-650 dark:text-indigo-400"><strong>Radio:</strong> "{{ testRadioVal }}"</p>
+                <p class="text-xs font-mono text-indigo-650 dark:text-indigo-400"><strong>Switches:</strong> [{{ testSwitchVal }}, {{ testSwitch2Val }}]</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Badges e Status -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Badges e Status</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Componentes AppBadge</p>
+            </div>
+            
+            <div class="space-y-4 flex-1">
+              <div class="space-y-2.5">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Variantes cromáticas (tamanho MD)</label>
+                <div class="flex flex-wrap gap-2">
+                  <AppBadge label="Indigo" variant="indigo" />
+                  <AppBadge label="Emerald" variant="emerald" />
+                  <AppBadge label="Amber" variant="amber" />
+                  <AppBadge label="Red" variant="red" />
+                  <AppBadge label="Slate" variant="slate" />
+                  <AppBadge label="Purple" variant="purple" />
+                </div>
+              </div>
+
+              <div class="space-y-2.5">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Indicadores com Dot Pulsante</label>
+                <div class="flex flex-wrap gap-2">
+                  <AppBadge label="Ativo" variant="emerald" dot />
+                  <AppBadge label="Pendente" variant="amber" dot />
+                  <AppBadge label="Erro" variant="red" dot />
+                  <AppBadge label="Indeterminado" variant="slate" dot />
+                </div>
+              </div>
+
+              <div class="space-y-2.5">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Tamanhos disponíveis</label>
+                <div class="flex items-center gap-2">
+                  <AppBadge label="Size XS" size="xs" variant="indigo" />
+                  <AppBadge label="Size SM" size="sm" variant="indigo" />
+                  <AppBadge label="Size MD" size="md" variant="indigo" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Progresso, Skeletons e TimePicker -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Visualização e Tempo</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Componentes AppProgressBar, AppSkeleton e AppTimePicker</p>
+            </div>
+            
+            <div class="space-y-4 flex-1">
+              <!-- Barra de Progresso Reativa -->
+              <div class="space-y-3">
+                <AppProgressBar :progress="testProgressVal" showLabel variant="indigo">Progresso de Teste</AppProgressBar>
+                <div class="flex gap-2">
+                  <button @click="decrementProgress" class="btn-secondary py-1.5 px-3 text-[10px] flex-1">-5%</button>
+                  <button @click="incrementProgress" class="btn-secondary py-1.5 px-3 text-[10px] flex-1">+5%</button>
+                </div>
+              </div>
+
+              <!-- Time Picker -->
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Seletor de Hora (AppTimePicker)</label>
+                <AppTimePicker v-model="testTimeVal" />
+                <p class="text-[10px] font-mono text-indigo-650 dark:text-indigo-400 text-center mt-1">
+                  Hora selecionada: {{ testTimeVal ? `${String(testTimeVal.hours).padStart(2, '0')}:${String(testTimeVal.minutes).padStart(2, '0')}` : '00:00' }}
+                </p>
+              </div>
+
+              <!-- Skeletons (Carregamento) -->
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Animação Shimmer (AppSkeleton)</label>
+                <div class="flex items-center gap-3">
+                  <AppSkeleton circle width="w-10" height="h-10" />
+                  <div class="flex-1 space-y-1.5">
+                    <AppSkeleton width="w-2/3" height="h-3" />
+                    <AppSkeleton width="w-full" height="h-2.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: Avatares -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Avatares</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Componentes AppAvatar</p>
+            </div>
+            
+            <div class="space-y-4 flex-1">
+              <div class="space-y-2.5">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Tamanhos (com iniciais)</label>
+                <div class="flex items-end gap-3">
+                  <div class="flex flex-col items-center gap-1">
+                    <AppAvatar name="Sergio Ramos" size="sm" />
+                    <span class="text-[8px] font-mono text-slate-400 dark:text-slate-500">sm</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <AppAvatar name="Sergio Ramos" size="md" />
+                    <span class="text-[8px] font-mono text-slate-400 dark:text-slate-500">md</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <AppAvatar name="Sergio Ramos" size="lg" />
+                    <span class="text-[8px] font-mono text-slate-400 dark:text-slate-500">lg</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <AppAvatar name="Sergio Ramos" size="xl" />
+                    <span class="text-[8px] font-mono text-slate-400 dark:text-slate-500">xl</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-2.5">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Com imagem (hover zoom)</label>
+                <div class="flex items-center gap-3">
+                  <AppAvatar src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" name="Jane Doe" size="lg" />
+                  <AppAvatar src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" name="John Doe" size="lg" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: Botões do Design System -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Botões Globais</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Classes de botões globais e variantes</p>
+            </div>
+            
+            <div class="space-y-4 flex-1">
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Primário (.btn-primary)</label>
+                <div class="flex gap-2">
+                  <button class="btn btn-primary flex-1 text-[10px] uppercase font-black py-2.5">Primário</button>
+                  <button class="btn btn-primary flex-1 text-[10px] uppercase font-black py-2.5" disabled>Desabilitado</button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Secundário (.btn-secondary)</label>
+                <div class="flex gap-2">
+                  <button class="btn-secondary flex-1 text-[10px] uppercase font-black py-2.5">Secundário</button>
+                  <button class="btn-secondary flex-1 text-[10px] uppercase font-black py-2.5" disabled>Desabilitado</button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Ícone Secundário (.btn-icon-secondary)</label>
+                <div class="flex gap-3">
+                  <button class="btn-icon-secondary" title="Configurações">
+                    <Settings class="w-4 h-4 text-indigo-500" />
+                  </button>
+                  <button class="btn-icon-secondary" disabled title="Desabilitado">
+                    <Settings class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
