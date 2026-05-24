@@ -568,6 +568,103 @@ const runRebuildPipeline = async (type) => {
   pipelineActive.value = false;
 };
 
+const acceptMergeRequest = async (mrIid, branchName, target, apiBase, safeProjectId, prefix, isExistingMr = false) => {
+  addMergeLog(`${prefix} Verificando estado do MR #${mrIid} no GitLab...`, 'info');
+  
+  let isReady = false;
+  let attempts = 0;
+  const maxAttempts = 12;
+
+  while (attempts < maxAttempts) {
+    const mrStateUrl = `${apiBase}/projects/${safeProjectId}/merge_requests/${mrIid}`;
+    const mrStateRes = await fetch(mrStateUrl, {
+      method: 'GET',
+      headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+    });
+
+    if (mrStateRes.ok) {
+      const mrState = await mrStateRes.json();
+      const basicStatus = mrState.merge_status;
+      const detailedStatus = mrState.detailed_merge_status;
+
+      if (mrState.state === 'merged') {
+        addMergeLog(`${prefix} Branch já foi integrada com SUCESSO no GitLab!`, 'success');
+        mergeStatusMap.value[branchName] = 'success';
+        return;
+      }
+      
+      if (mrState.state === 'closed') {
+        addMergeLog(`${prefix} O Merge Request correspondente (#${mrIid}) está fechado.`, 'error');
+        mergeStatusMap.value[branchName] = 'error';
+        return;
+      }
+
+      const isNoChanges = detailedStatus === 'no_changes' || detailedStatus === 'no_commits' || mrState.changes_count === '0' || mrState.changes_count === 0;
+      if (isNoChanges) {
+        if (mrState.has_conflicts) {
+          addMergeLog(`${prefix} CONFLITO DE MESCLAGEM DETECTADO! É necessária resolução manual.`, 'error');
+          mergeStatusMap.value[branchName] = 'conflict';
+        } else {
+          addMergeLog(`${prefix} Não há alterações/commits a integrar. A branch de origem já é idêntica à de destino.`, 'warning');
+          mergeStatusMap.value[branchName] = 'no_changes';
+        }
+        return;
+      }
+
+      if (detailedStatus === 'conflict' || mrState.has_conflicts === true) {
+        addMergeLog(`${prefix} CONFLITO DE MESCLAGEM DETECTADO! É necessária resolução manual no GitLab.`, 'error');
+        mergeStatusMap.value[branchName] = 'conflict';
+        return;
+      }
+
+      const blockingStatuses = ['draft', 'ci_must_pass', 'ci_still_running', 'discussions_not_resolved', 'not_approved'];
+      if (blockingStatuses.includes(detailedStatus)) {
+        addMergeLog(`${prefix} MR #${mrIid} impossibilitado de merge imediato: ${detailedStatus}`, 'error');
+        mergeStatusMap.value[branchName] = 'error';
+        return;
+      }
+
+      if (basicStatus === 'can_be_merged' || detailedStatus === 'mergeable') {
+        isReady = true;
+        break;
+      }
+
+      if (basicStatus === 'cannot_be_merged' && detailedStatus !== 'checking' && detailedStatus !== 'unchecked') {
+        addMergeLog(`${prefix} GitLab relata cannot_be_merged (provável falha de pipeline ou restrição).`, 'error');
+        mergeStatusMap.value[branchName] = 'error';
+        return;
+      }
+    }
+    attempts++;
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+
+  if (!isReady) {
+    addMergeLog(`${prefix} Timeout: O GitLab não concluiu a verificação de mesclagem a tempo.`, 'error');
+    mergeStatusMap.value[branchName] = 'error';
+    return;
+  }
+
+  addMergeLog(`${prefix} MR #${mrIid} verificado. Executando mesclagem final...`, 'info');
+  const acceptUrl = `${apiBase}/projects/${safeProjectId}/merge_requests/${mrIid}/merge`;
+  const acceptRes = await fetch(acceptUrl, {
+    method: 'PUT',
+    headers: {
+      'PRIVATE-TOKEN': settingsStore.gitlabToken,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (acceptRes.ok) {
+    addMergeLog(`${prefix} Branch '${branchName}' integrada com SUCESSO no GitLab!`, 'success');
+    mergeStatusMap.value[branchName] = 'success';
+  } else {
+    const errorData = await acceptRes.json().catch(() => ({}));
+    addMergeLog(`${prefix} Erro na requisição de mesclagem: ${errorData.message || acceptRes.statusText}`, 'error');
+    mergeStatusMap.value[branchName] = 'error';
+  }
+};
+
 const runIndividualMerge = async (branchName) => {
   if (mergeLoadingMap.value[branchName]) return;
   const target = mergeTarget.value;
@@ -599,6 +696,23 @@ const runIndividualMerge = async (branchName) => {
     }
     const safeProjectId = encodeURIComponent(decodeURIComponent(settingsStore.gitlabProjectId));
 
+    addMergeLog(`${prefix} Verificando divergência de commits...`, 'info');
+    const compareUrl = `${apiBase}/projects/${safeProjectId}/repository/compare?from=${encodeURIComponent(target)}&to=${encodeURIComponent(branchName)}`;
+    const compareRes = await fetch(compareUrl, {
+      method: 'GET',
+      headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+    });
+    
+    if (compareRes.ok) {
+      const compareData = await compareRes.json();
+      if (compareData.commits && compareData.commits.length === 0) {
+        addMergeLog(`${prefix} Não há alterações a integrar. A branch de origem já é idêntica à de destino (Verificado via API).`, 'warning');
+        mergeStatusMap.value[branchName] = 'no_changes';
+        mergeLoadingMap.value[branchName] = false;
+        return;
+      }
+    }
+
     addMergeLog(`${prefix} Criando Merge Request no GitLab...`, 'info');
     const mrUrl = `${apiBase}/projects/${safeProjectId}/merge_requests`;
     const mrRes = await fetch(mrUrl, {
@@ -617,42 +731,55 @@ const runIndividualMerge = async (branchName) => {
 
     if (!mrRes.ok) {
       const errorData = await mrRes.json().catch(() => ({}));
-      throw new Error(errorData.message || mrRes.statusText);
+      const errorMsg = errorData.message || mrRes.statusText || "";
+      const errorMsgStr = Array.isArray(errorMsg) ? errorMsg.join(", ") : String(errorMsg);
+      
+      // Se o MR já existe, busca o IID via API GET
+      if (mrRes.status === 409 || errorMsgStr.toLowerCase().includes("already exists")) {
+        addMergeLog(`${prefix} Merge Request já existente. Buscando MR aberto via API...`, 'info');
+        const searchUrl = `${apiBase}/projects/${safeProjectId}/merge_requests?source_branch=${encodeURIComponent(branchName)}&target_branch=${encodeURIComponent(target)}&state=opened`;
+        const searchRes = await fetch(searchUrl, {
+          method: 'GET',
+          headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+        });
+        
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          if (searchData && searchData.length > 0) {
+            const existingIid = searchData[0].iid;
+            addMergeLog(`${prefix} Merge Request existente encontrado (#${existingIid}). Prosseguindo...`, 'info');
+            await acceptMergeRequest(existingIid, branchName, target, apiBase, safeProjectId, prefix, true);
+            return;
+          }
+        }
+        throw new Error("Falha ao recuperar o Merge Request existente. " + errorMsgStr);
+      }
+      
+      throw new Error(errorMsgStr);
     }
 
     const mrData = await mrRes.json();
     const mrIid = mrData.iid;
     addMergeLog(`${prefix} Merge Request #${mrIid} criado. Aceitando e executando mesclagem...`, 'info');
 
-    const acceptUrl = `${apiBase}/projects/${safeProjectId}/merge_requests/${mrIid}/merge`;
-    const acceptRes = await fetch(acceptUrl, {
-      method: 'PUT',
-      headers: {
-        'PRIVATE-TOKEN': settingsStore.gitlabToken,
-        'Content-Type': 'application/json'
-      }
-    });
+    await acceptMergeRequest(mrIid, branchName, target, apiBase, safeProjectId, prefix);
 
-    if (acceptRes.ok) {
-      addMergeLog(`${prefix} Branch '${branchName}' integrada com SUCESSO no GitLab!`, 'success');
-      mergeStatusMap.value[branchName] = 'success';
-    } else if (acceptRes.status === 406 || acceptRes.status === 409) {
-      addMergeLog(`${prefix} CONFLITO DE MESCLAGEM DETECTADO! É necessária resolução manual.`, 'error');
-      mergeStatusMap.value[branchName] = 'conflict';
-    } else if (acceptRes.status === 405) {
-      addMergeLog(`${prefix} OPERAÇÃO BLOQUEADA (HTTP 405). O GitLab não permite mesclar este Merge Request automaticamente. Causas comuns:`, 'warning');
-      addMergeLog(`- 1. Há conflitos de código pendentes entre as branches.`, 'warning');
-      addMergeLog(`- 2. A pipeline de CI/CD está rodando (e o GitLab exige sucesso antes de mesclar).`, 'warning');
-      addMergeLog(`- 3. Não há alterações pendentes a integrar (as branches já são idênticas).`, 'warning');
-      addMergeLog(`- 4. Existem discussões em aberto ou aprovações exigidas pendentes no GitLab.`, 'warning');
-      mergeStatusMap.value[branchName] = 'conflict';
-    } else {
-      const errorData = await acceptRes.json().catch(() => ({}));
-      throw new Error(errorData.message || acceptRes.statusText);
-    }
   } catch (err) {
-    addMergeLog(`${prefix} ERRO no merge: ${err.message}`, 'error');
-    mergeStatusMap.value[branchName] = 'error';
+    const msg = String(err.message).toLowerCase();
+    const noChangesTerms = [
+      "no changes", "no commits", "already merged", "already up-to-date", 
+      "nothing to merge", "empty merge request", "no difference", "has no changes",
+      "not diverging", "cannot create: branches are not diverging"
+    ];
+    const isNoChanges = noChangesTerms.some(term => msg.includes(term));
+    
+    if (isNoChanges) {
+      addMergeLog(`${prefix} Não há alterações a integrar. A branch já é idêntica ao destino.`, 'warning');
+      mergeStatusMap.value[branchName] = 'no_changes';
+    } else {
+      addMergeLog(`${prefix} ERRO no merge: ${err.message}`, 'error');
+      mergeStatusMap.value[branchName] = 'error';
+    }
   }
 
   mergeLoadingMap.value[branchName] = false;
