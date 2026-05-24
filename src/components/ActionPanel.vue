@@ -45,7 +45,7 @@ defineEmits([
         <button
           @click="$emit('list-all-branches')"
           :disabled="branchesLoading"
-          class="btn btn-primary w-full py-4 px-2 flex-col gap-1 border border-indigo-500/20 cursor-pointer text-center shrink-0 shadow-lg shadow-indigo-500/10"
+          class="btn btn-gradient w-full py-4 px-2 flex-col gap-1 cursor-pointer text-center shrink-0"
         >
           <span class="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
             <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': branchesLoading }" />
@@ -61,7 +61,7 @@ defineEmits([
           <!-- Botão DEV (Desenvolvimento) -->
           <button
             @click="$emit('merge-to-target', branchDesenvolvimento || 'dev-06', 'dev')"
-            class="btn w-full py-4 px-2 flex-col gap-1 bg-amber-500 hover:bg-amber-600 text-white border-none shadow-md shadow-amber-500/10 cursor-pointer text-center shrink-0"
+            class="btn btn-warning w-full py-4 px-2 flex-col gap-1 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ branchDesenvolvimento || 'dev-06' }}</span>
           </button>
@@ -69,7 +69,7 @@ defineEmits([
           <!-- Botão HML (Homologação) -->
           <button
             @click="$emit('merge-to-target', branchHomologacao || 'hml', 'hml')"
-            class="btn w-full py-4 px-2 flex-col gap-1 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 cursor-pointer text-center shrink-0"
+            class="btn btn-primary w-full py-4 px-2 flex-col gap-1 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ branchHomologacao || 'hml' }}</span>
           </button>
@@ -79,7 +79,7 @@ defineEmits([
         <template v-if="selectedBranches.length >= 1">
           <button
             @click="$emit('bulk-delete')"
-            class="btn w-full py-4 px-2 flex-col gap-1 bg-red-600 hover:bg-red-700 text-white border-none shadow-md shadow-red-500/10 cursor-pointer text-center shrink-0"
+            class="btn btn-danger w-full py-4 px-2 flex-col gap-1 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider text-center">Excluir</span>
             <span class="text-[8px] font-bold">

@@ -114,6 +114,37 @@
     color: var(--app-text-main);
   }
 
+  .btn-gradient {
+    @apply bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-indigo-500/25;
+  }
+  .btn-gradient:hover {
+    @apply filter brightness-110;
+  }
+
+  .btn-outline {
+    @apply border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-transparent hover:bg-indigo-500/10 hover:border-indigo-500/50;
+  }
+
+  .btn-glass {
+    @apply bg-white/10 dark:bg-slate-900/30 border border-white/20 dark:border-slate-800/40 text-slate-800 dark:text-slate-200 backdrop-blur-md shadow-inner hover:bg-white/20 dark:hover:bg-slate-900/55;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-red-500/20;
+  }
+
+  .btn-success {
+    @apply bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-emerald-500/20;
+  }
+
+  .btn-warning {
+    @apply bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:shadow-amber-500/20;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-500/10 dark:hover:bg-white/5;
+  }
+
   .app-card-panel {
     background-color: var(--app-surface-panel-bg);
     border: 1px solid var(--app-surface-panel-border);

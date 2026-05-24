@@ -11,6 +11,7 @@ import BaseModal from './BaseModal.vue';
 import AppInput from './base/AppInput.vue';
 import AppAvatar from './base/AppAvatar.vue';
 import AppBadge from './base/AppBadge.vue';
+import AppButton from './base/AppButton.vue';
 import AppProgressBar from './base/AppProgressBar.vue';
 import AppRadio from './base/AppRadio.vue';
 import AppSelect from './base/AppSelect.vue';
@@ -44,6 +45,8 @@ const testSelectVal = ref('op2');
 const testRadioVal = ref('rad1');
 const testProgressVal = ref(45);
 const testTimeVal = ref({ hours: 14, minutes: 30 });
+const testBtnLoading = ref(false);
+const testBtnDisabled = ref(false);
 
 const selectOptions = [
   { value: 'op1', label: 'Opção 1 - Breathe' },
@@ -928,7 +931,7 @@ const toggleTheme = () => {
           <button 
             @click="runRebuildPipeline('dev')"
             :disabled="pipelineActive"
-            class="btn flex-1 flex items-center justify-center gap-3 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-500/10 cursor-pointer"
+            class="btn btn-warning flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider cursor-pointer"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
             Recriar {{ settingsStore.branchDesenvolvimento }}
@@ -937,7 +940,7 @@ const toggleTheme = () => {
           <button 
             @click="runRebuildPipeline('hml')"
             :disabled="pipelineActive"
-            class="btn btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider rounded-[var(--app-card-radius)] shadow-lg shadow-indigo-500/10 cursor-pointer"
+            class="btn btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider cursor-pointer"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
             Recriar {{ settingsStore.branchHomologacao }}
@@ -1266,40 +1269,149 @@ const toggleTheme = () => {
             </div>
           </div>
 
-          <!-- Card 6: Botões do Design System -->
-          <div class="app-card-panel flex flex-col gap-4 text-left">
-            <div>
-              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Botões Globais</h3>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Classes de botões globais e variantes</p>
+          <!-- Card 6: Componente Base AppButton -->
+          <div class="app-card-panel flex flex-col gap-4 text-left lg:col-span-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-app-border-light pb-3">
+              <div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Componente AppButton</h3>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Nosso componente base unificado para botões premium</p>
+              </div>
+              <!-- Controles de Teste do Componente -->
+              <div class="flex items-center gap-4 bg-slate-100/50 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-app-border-light shrink-0">
+                <AppSwitch v-model="testBtnLoading" label="Loading" />
+                <div class="w-px h-6 bg-app-border-light"></div>
+                <AppSwitch v-model="testBtnDisabled" label="Disabled" />
+              </div>
             </div>
             
-            <div class="space-y-4 flex-1">
-              <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Primário (.btn-primary)</label>
-                <div class="flex gap-2">
-                  <button class="btn btn-primary flex-1 text-[10px] uppercase font-black py-2.5">Primário</button>
-                  <button class="btn btn-primary flex-1 text-[10px] uppercase font-black py-2.5" disabled>Desabilitado</button>
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-1">
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Primary</label>
+                <AppButton variant="primary" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="Settings" class="w-full">
+                  Primary
+                </AppButton>
               </div>
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Secundário (.btn-secondary)</label>
-                <div class="flex gap-2">
-                  <button class="btn-secondary flex-1 text-[10px] uppercase font-black py-2.5">Secundário</button>
-                  <button class="btn-secondary flex-1 text-[10px] uppercase font-black py-2.5" disabled>Desabilitado</button>
-                </div>
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Secondary</label>
+                <AppButton variant="secondary" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="Info" class="w-full">
+                  Secondary
+                </AppButton>
               </div>
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">Botão Ícone Secundário (.btn-icon-secondary)</label>
-                <div class="flex gap-3">
-                  <button class="btn-icon-secondary" title="Configurações">
-                    <Settings class="w-4 h-4 text-indigo-500" />
-                  </button>
-                  <button class="btn-icon-secondary" disabled title="Desabilitado">
-                    <Settings class="w-4 h-4" />
-                  </button>
-                </div>
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Gradient</label>
+                <AppButton variant="gradient" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="CloudLightning" class="w-full">
+                  Gradient
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Outline</label>
+                <AppButton variant="outline" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="Lock" class="w-full">
+                  Outline
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Glass</label>
+                <AppButton variant="glass" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="Terminal" class="w-full">
+                  Glass
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Ghost</label>
+                <AppButton variant="ghost" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="RefreshCw" class="w-full">
+                  Ghost
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Danger</label>
+                <AppButton variant="danger" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="Trash2" class="w-full">
+                  Danger
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Success</label>
+                <AppButton variant="success" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="GitBranch" class="w-full">
+                  Success
+                </AppButton>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-1">Variant: Warning</label>
+                <AppButton variant="warning" :loading="testBtnLoading" :disabled="testBtnDisabled" :icon="AlertTriangle" class="w-full">
+                  Warning
+                </AppButton>
+              </div>
+            </div>
+
+            <!-- Tamanhos do AppButton -->
+            <div class="border-t border-app-border-light pt-3 mt-2">
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-2">Escalas Geométricas (Tamanhos)</label>
+              <div class="flex flex-wrap items-center gap-3">
+                <AppButton variant="gradient" size="sm" :loading="testBtnLoading" :disabled="testBtnDisabled">Size SM</AppButton>
+                <AppButton variant="gradient" size="md" :loading="testBtnLoading" :disabled="testBtnDisabled">Size MD</AppButton>
+                <AppButton variant="gradient" size="lg" :loading="testBtnLoading" :disabled="testBtnDisabled">Size LG</AppButton>
+                <AppButton variant="gradient" size="xl" :loading="testBtnLoading" :disabled="testBtnDisabled">Size XL</AppButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 7: Botões CSS Globais (Design System) -->
+          <div class="app-card-panel flex flex-col gap-4 text-left">
+            <div>
+              <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Botões Globais (CSS)</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Classes utilitárias prontas do style.css</p>
+            </div>
+            
+            <div class="space-y-3.5 overflow-y-auto max-h-[380px] pr-1 custom-scrollbar flex-1">
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-primary</label>
+                <button class="btn btn-primary w-full py-2 text-[10px]">Confirmar Ação</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-secondary</label>
+                <button class="btn-secondary w-full py-2 text-[10px]">Cancelar Operação</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-gradient</label>
+                <button class="btn-gradient btn w-full py-2 text-[10px]">Enviar Arquivos</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-outline</label>
+                <button class="btn-outline btn w-full py-2 text-[10px]">Visualizar Código</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-glass</label>
+                <button class="btn-glass btn w-full py-2 text-[10px]">Configurar Painel</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-danger</label>
+                <button class="btn-danger btn w-full py-2 text-[10px]">Excluir Tudo</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-success</label>
+                <button class="btn-success btn w-full py-2 text-[10px]">Salvar Cadastro</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-warning</label>
+                <button class="btn-warning btn w-full py-2 text-[10px]">Atenção Crítica</button>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block">btn-ghost</label>
+                <button class="btn-ghost btn w-full py-2 text-[10px]">Voltar Menu</button>
               </div>
             </div>
           </div>
