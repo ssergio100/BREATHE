@@ -61,7 +61,7 @@ defineEmits([
           <!-- Botão DEV (Desenvolvimento) -->
           <button
             @click="$emit('merge-to-target', branchDesenvolvimento || 'dev-06', 'dev')"
-            class="btn w-full py-4 px-2 flex-col gap-1 border border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer text-center shrink-0"
+            class="btn w-full py-4 px-2 flex-col gap-1 bg-amber-500 hover:bg-amber-600 text-white border-none shadow-md shadow-amber-500/10 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ branchDesenvolvimento || 'dev-06' }}</span>
           </button>
@@ -69,7 +69,7 @@ defineEmits([
           <!-- Botão HML (Homologação) -->
           <button
             @click="$emit('merge-to-target', branchHomologacao || 'hml', 'hml')"
-            class="btn w-full py-4 px-2 flex-col gap-1 border border-indigo-500 bg-indigo-500/10 text-indigo-655 dark:text-indigo-400 hover:bg-indigo-500/20 cursor-pointer text-center shrink-0"
+            class="btn w-full py-4 px-2 flex-col gap-1 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ branchHomologacao || 'hml' }}</span>
           </button>
@@ -79,7 +79,7 @@ defineEmits([
         <template v-if="selectedBranches.length >= 1">
           <button
             @click="$emit('bulk-delete')"
-            class="btn w-full py-4 px-2 flex-col gap-1 border border-red-500 bg-red-500/10 text-red-650 dark:text-red-400 hover:bg-red-500/20 cursor-pointer text-center shrink-0 shadow-md"
+            class="btn w-full py-4 px-2 flex-col gap-1 bg-red-600 hover:bg-red-700 text-white border-none shadow-md shadow-red-500/10 cursor-pointer text-center shrink-0"
           >
             <span class="text-[11px] font-black uppercase tracking-wider text-center">Excluir</span>
             <span class="text-[8px] font-bold">
