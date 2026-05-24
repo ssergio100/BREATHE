@@ -24,6 +24,16 @@
   --app-text-shadow: none;
   --app-border-opacity: 0.1;
   --app-input-radius: 8px;
+
+  /* Semantic UI Tokens - Modo Claro */
+  --app-btn-secondary-bg: rgba(0, 0, 0, 0.04);
+  --app-btn-secondary-hover: rgba(0, 0, 0, 0.08);
+  --app-btn-secondary-border: rgba(0, 0, 0, 0.1);
+  --app-btn-secondary-text: #475569;
+  --app-surface-panel-bg: #ffffff;
+  --app-surface-panel-border: rgba(0, 0, 0, 0.1);
+  --app-surface-item-bg: #ffffff;
+  --app-surface-item-border: rgba(0, 0, 0, 0.06);
 }
 
 .dark {
@@ -36,6 +46,16 @@
   --app-surface-muted: rgba(255, 255, 255, 0.03);
   --app-border-main: rgba(34, 32, 32, 0.1);
   --app-border-light: rgba(255, 255, 255, 0.05);
+
+  /* Semantic UI Tokens - Modo Escuro */
+  --app-btn-secondary-bg: rgba(255, 255, 255, 0.05);
+  --app-btn-secondary-hover: rgba(255, 255, 255, 0.1);
+  --app-btn-secondary-border: rgba(255, 255, 255, 0.06);
+  --app-btn-secondary-text: #cbd5e1;
+  --app-surface-panel-bg: rgba(15, 23, 42, 0.4);
+  --app-surface-panel-border: rgba(255, 255, 255, 0.06);
+  --app-surface-item-bg: rgba(15, 23, 42, 0.4);
+  --app-surface-item-border: rgba(255, 255, 255, 0.04);
 }
 
 @layer base {
@@ -69,6 +89,45 @@
     border-radius: var(--app-input-radius);
   }
   .btn-primary { @apply bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg; }
+  
+  .btn-secondary {
+    background-color: var(--app-btn-secondary-bg);
+    border: 1px solid var(--app-btn-secondary-border);
+    color: var(--app-btn-secondary-text);
+    border-radius: var(--app-input-radius);
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-xs font-black uppercase tracking-wider;
+  }
+  .btn-secondary:hover {
+    background-color: var(--app-btn-secondary-hover);
+    color: var(--app-text-main);
+  }
+
+  .btn-icon-secondary {
+    background-color: var(--app-btn-secondary-bg);
+    border: 1px solid var(--app-btn-secondary-border);
+    color: var(--app-btn-secondary-text);
+    border-radius: var(--app-input-radius);
+    @apply p-2.5 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95;
+  }
+  .btn-icon-secondary:hover {
+    background-color: var(--app-btn-secondary-hover);
+    color: var(--app-text-main);
+  }
+
+  .app-card-panel {
+    background-color: var(--app-surface-panel-bg);
+    border: 1px solid var(--app-surface-panel-border);
+    border-radius: var(--app-card-radius);
+    padding: var(--app-card-padding);
+    @apply shadow-lg backdrop-blur-md;
+  }
+  
+  .app-card-item {
+    background-color: var(--app-surface-item-bg);
+    border: 1px solid var(--app-surface-item-border);
+    border-radius: var(--app-input-radius);
+    @apply transition-all duration-200 cursor-pointer;
+  }
   
   .app-input, input[type="text"], input[type="password"], input[type="number"], select, textarea {
     @apply w-full px-4 py-2.5 text-sm bg-slate-100/50 dark:bg-white/5 border border-app-border-light text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all;

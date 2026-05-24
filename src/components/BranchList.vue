@@ -108,7 +108,7 @@ const formatDate = (dateString) => {
         type="button"
         @click="$emit('toggle-order')"
         :disabled="!branchesFetched"
-        class="h-full px-3.5 bg-app-solid dark:bg-app-glass/60 hover:bg-app-surface dark:hover:bg-app-surface/60 border border-app-border-light rounded-[var(--app-input-radius)] text-app-sub hover:text-app-main transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider shrink-0 disabled:opacity-50"
+        class="btn-secondary h-full px-3.5 flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
         :title="branchesOrder === 'desc' ? 'Ordenando do mais novo ao mais antigo' : 'Ordenando do mais antigo ao mais novo'"
       >
         <ArrowUpDown class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
@@ -134,7 +134,7 @@ const formatDate = (dateString) => {
         v-for="branch in filteredBranches"
         :key="branch.name"
         @click="$emit('toggle-selection', branch.name)"
-        class="flex items-center justify-between p-3 bg-app-solid dark:bg-app-glass/40 border border-app-border-light rounded-[var(--app-input-radius)] hover:border-indigo-500/20 dark:hover:border-white/10 transition-colors cursor-pointer"
+        class="app-card-item flex items-center justify-between p-3 hover:border-indigo-500/20 dark:hover:border-white/10 cursor-pointer"
       >
         <!-- Checkbox de Seleção Individual Premium Encorpado -->
         <div class="flex items-center shrink-0 pr-3">

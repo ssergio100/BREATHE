@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import { 
-  RefreshCw, ArrowRight, History, Terminal, X,
-  GitBranch, CheckCircle2, AlertTriangle, Search, Check, AlertCircle,
-  Trash2, Eye, EyeOff, Lock, Settings, Info, CloudLightning, ArrowUpDown,
+  RefreshCw, ArrowRight, Terminal,
+  GitBranch, AlertTriangle,
+  Trash2, Eye, EyeOff, Lock, Settings, Info, CloudLightning,
   Sun, Moon
 } from 'lucide-vue-next';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -15,12 +15,12 @@ import ActionPanel from './ActionPanel.vue';
 
 const settingsStore = useSettingsStore();
 
-// --- ESTADOS DA SIMULAÇÃO ---
-const simulationActive = ref(false);
-const simulationTarget = ref(null); // 'dev' ou 'hml'
-const simulationStep = ref(0);
-const simulationLogs = ref([]);
-const simulationBranches = ref([]);
+// --- ESTADOS DO PIPELINE DE RECONSTRUÇÃO ---
+const pipelineActive = ref(false);
+const pipelineTarget = ref(null); // 'dev' ou 'hml'
+const pipelineStep = ref(0);
+const pipelineLogs = ref([]);
+const activeBranches = ref([]);
 const totalBranchesCount = ref(0);
 
 let resolveDestruction = null;
@@ -188,8 +188,8 @@ const testConnection = async () => {
   }
 };
 
-const addSimLog = (text, type = 'info') => {
-  simulationLogs.value.push({
+const addPipelineLog = (text, type = 'info') => {
+  pipelineLogs.value.push({
     time: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
     text,
     type
@@ -211,7 +211,7 @@ const branchesOrder = ref('desc'); // 'desc' (mais novo) ou 'asc' (mais antigo)
 
 // Computed property para filtrar e ordenar as branches no frontend de forma instantânea
 const filteredBranches = computed(() => {
-  let list = [...simulationBranches.value];
+  let list = [...activeBranches.value];
   
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase().trim();
@@ -237,7 +237,7 @@ const filteredBranches = computed(() => {
 const fetchBranches = async (target, isBackgroundSearch = false) => {
   // Impede listagem se tentar listar master
   if (target === settingsStore.branchMaster) {
-    simulationBranches.value = [];
+    activeBranches.value = [];
     totalBranchesCount.value = 0;
     branchesError.value = '';
     return;
@@ -245,7 +245,7 @@ const fetchBranches = async (target, isBackgroundSearch = false) => {
 
   const useGitLab = !!(settingsStore.gitlabToken && settingsStore.gitlabProjectId);
   if (!useGitLab) {
-    simulationBranches.value = [];
+    activeBranches.value = [];
     totalBranchesCount.value = 0;
     branchesError.value = 'Credenciais do GitLab não configuradas! Informe-as clicando em "Configurar Ambientes".';
     return;
@@ -300,7 +300,7 @@ const fetchBranches = async (target, isBackgroundSearch = false) => {
     // Filtra para remover ramos base e releases padrão
     const filtered = data.filter(b => !baseBranches.includes(b.name) && !b.name.startsWith('release/'));
     
-    simulationBranches.value = filtered.map(b => ({
+    activeBranches.value = filtered.map(b => ({
       name: b.name,
       mr: null,
       title: b.commit ? b.commit.title : 'Commit recente',
@@ -319,7 +319,7 @@ const fetchBranches = async (target, isBackgroundSearch = false) => {
     console.error(err);
     if (!isBackgroundSearch) {
       branchesError.value = `Erro ao carregar branches: ${err.message}`;
-      simulationBranches.value = [];
+      activeBranches.value = [];
       totalBranchesCount.value = 0;
     }
   } finally {
@@ -389,25 +389,9 @@ const toggleOrderAndRefetch = async () => {
   }
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).replace(',', ' às');
-  } catch (e) {
-    return dateString;
-  }
-};
 
-const runRebuildSimulation = async (type) => {
-  if (simulationActive.value) return;
+const runRebuildPipeline = async (type) => {
+  if (pipelineActive.value) return;
 
   const target = type === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao;
   
@@ -419,20 +403,20 @@ const runRebuildSimulation = async (type) => {
 
   const useGitLab = !!(settingsStore.gitlabToken && settingsStore.gitlabProjectId);
   if (!useGitLab) {
-    simulationActive.value = true;
-    simulationTarget.value = type;
-    simulationStep.value = 1;
-    simulationLogs.value = [];
-    addSimLog("[Erro] Credenciais do GitLab não configuradas! Por favor, clique em 'Configurar Ambientes' no topo para registrar o ID do Projeto e Token de Acesso.", "error");
-    simulationActive.value = false;
+    pipelineActive.value = true;
+    pipelineTarget.value = type;
+    pipelineStep.value = 1;
+    pipelineLogs.value = [];
+    addPipelineLog("[Erro] Credenciais do GitLab não configuradas! Por favor, clique em 'Configurar Ambientes' no topo para registrar o ID do Projeto e Token de Acesso.", "error");
+    pipelineActive.value = false;
     return;
   }
 
-  simulationActive.value = true;
-  simulationTarget.value = type;
-  simulationStep.value = 1;
-  simulationLogs.value = [];
-  simulationBranches.value = [];
+  pipelineActive.value = true;
+  pipelineTarget.value = type;
+  pipelineStep.value = 1;
+  pipelineLogs.value = [];
+  activeBranches.value = [];
   totalBranchesCount.value = 0;
   searchQuery.value = '';
 
@@ -443,21 +427,21 @@ const runRebuildSimulation = async (type) => {
   }
   const safeProjectId = encodeURIComponent(decodeURIComponent(settingsStore.gitlabProjectId));
 
-  addSimLog(`[Real] Iniciando pipeline de recriação do ambiente '${target}'...`, 'info');
+  addPipelineLog(`Iniciando pipeline de recriação do ambiente '${target}'...`, 'info');
   
-  addSimLog(`[Real] Consultando GitLab para listar branches de feature ativas...`, 'info');
+  addPipelineLog(`Consultando GitLab para listar branches de feature ativas...`, 'info');
   await fetchBranches(target);
   
-  addSimLog(`[Real] Consulta concluída. Encontradas ${totalBranchesCount.value} branches ativas.`, 'success');
+  addPipelineLog(`Consulta concluída. Encontradas ${totalBranchesCount.value} branches ativas.`, 'success');
   
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   // Passo 1: Preparação e Backup
-  simulationStep.value = 1;
+  pipelineStep.value = 1;
   const timestamp = new Date().toISOString().replace(/T/, '-').replace(/:/g, '').slice(0, 17);
   const backupBranchName = `archive/${target}-${timestamp}`;
 
-  addSimLog(`[Real] [Fase 1: Backup] Criando branch de backup '${backupBranchName}' a partir de '${target}'...`, 'info');
+  addPipelineLog(`[Fase 1: Backup] Criando branch de backup '${backupBranchName}' a partir de '${target}'...`, 'info');
 
   try {
     const backupUrl = `${apiBase}/projects/${safeProjectId}/repository/branches?branch=${encodeURIComponent(backupBranchName)}&ref=${encodeURIComponent(target)}`;
@@ -468,25 +452,25 @@ const runRebuildSimulation = async (type) => {
       }
     });
     if (backupRes.ok) {
-      addSimLog(`[Real] [Fase 1: Backup] Backup criado com sucesso como '${backupBranchName}'`, 'success');
+      addPipelineLog(`[Fase 1: Backup] Backup criado com sucesso como '${backupBranchName}'`, 'success');
     } else {
       const errorData = await backupRes.json().catch(() => ({}));
-      addSimLog(`[Real] [Fase 1: Backup] Não foi possível criar backup remoto (${errorData.message || backupRes.statusText}). Prosseguindo.`, 'warning');
+      addPipelineLog(`[Fase 1: Backup] Não foi possível criar backup remoto (${errorData.message || backupRes.statusText}). Prosseguindo.`, 'warning');
     }
   } catch (e) {
-    addSimLog(`[Real] [Fase 1: Backup] Erro ao tentar criar backup: ${e.message}. Prosseguindo.`, 'warning');
+    addPipelineLog(`[Fase 1: Backup] Erro ao tentar criar backup: ${e.message}. Prosseguindo.`, 'warning');
   }
 
   // Passo 2: Destruição (Aguardando Confirmação)
   waitingForDestruction.value = true;
-  addSimLog(`[Real] [Pausa] Aguardando autorização manual para excluir a branch '${target}'...`, 'warning');
+  addPipelineLog(`[Pausa] Aguardando autorização manual para excluir a branch '${target}'...`, 'warning');
   await new Promise(resolve => {
     resolveDestruction = resolve;
   });
 
-  simulationStep.value = 2;
+  pipelineStep.value = 2;
 
-  addSimLog(`[Real] [Fase 2: Destruição] Iniciando deleção da branch antiga '${target}'...`, 'info');
+  addPipelineLog(`[Fase 2: Destruição] Iniciando deleção da branch antiga '${target}'...`, 'info');
   try {
     const deleteUrl = `${apiBase}/projects/${safeProjectId}/repository/branches/${encodeURIComponent(target)}`;
     const deleteRes = await fetch(deleteUrl, {
@@ -497,28 +481,28 @@ const runRebuildSimulation = async (type) => {
     });
 
     if (deleteRes.ok) {
-      addSimLog(`[Real] [Fase 2: Destruição] Branch antiga '${target}' deletada com sucesso.`, 'success');
+      addPipelineLog(`[Fase 2: Destruição] Branch antiga '${target}' deletada com sucesso.`, 'success');
     } else if (deleteRes.status === 403) {
-      addSimLog(`[Real] [Fase 2: Destruição] ERRO (403 Forbidden): A branch '${target}' é PROTEGIDA no GitLab. Por favor desproteja-a temporariamente e tente novamente.`, 'error');
-      simulationActive.value = false;
+      addPipelineLog(`[Fase 2: Destruição] ERRO (403 Forbidden): A branch '${target}' é PROTEGIDA no GitLab. Por favor desproteja-a temporariamente e tente novamente.`, 'error');
+      pipelineActive.value = false;
       return;
     } else {
       const errorData = await deleteRes.json().catch(() => ({}));
-      addSimLog(`[Real] [Fase 2: Destruição] Aviso ao deletar: ${errorData.message || deleteRes.statusText}. Prosseguindo para criação.`, 'warning');
+      addPipelineLog(`[Fase 2: Destruição] Aviso ao deletar: ${errorData.message || deleteRes.statusText}. Prosseguindo para criação.`, 'warning');
     }
   } catch (err) {
-    addSimLog(`[Real] [Fase 2: Destruição] ERRO ao tentar deletar a branch: ${err.message}`, 'error');
-    simulationActive.value = false;
+    addPipelineLog(`[Fase 2: Destruição] ERRO ao tentar deletar a branch: ${err.message}`, 'error');
+    pipelineActive.value = false;
     return;
   }
 
   // Passo 3: Recriação (da Master Protegida)
   await new Promise(resolve => setTimeout(resolve, 1200));
-  simulationStep.value = 3;
+  pipelineStep.value = 3;
 
   const baseRef = settingsStore.branchMaster;
 
-  addSimLog(`[Real] [Fase 3: Recriação] Criando nova branch '${target}' a partir da master '${baseRef}'...`, 'info');
+  addPipelineLog(`[Fase 3: Recriação] Criando nova branch '${target}' a partir da master '${baseRef}'...`, 'info');
   try {
     const createUrl = `${apiBase}/projects/${safeProjectId}/repository/branches?branch=${encodeURIComponent(target)}&ref=${encodeURIComponent(baseRef)}`;
     const createRes = await fetch(createUrl, {
@@ -529,23 +513,23 @@ const runRebuildSimulation = async (type) => {
     });
 
     if (createRes.ok) {
-      addSimLog(`[Real] [Fase 3: Recriação] Nova branch '${target}' recriada de forma limpa a partir da '${baseRef}'!`, 'success');
+      addPipelineLog(`[Fase 3: Recriação] Nova branch '${target}' recriada de forma limpa a partir da '${baseRef}'!`, 'success');
     } else {
       const errorData = await createRes.json().catch(() => ({}));
       throw new Error(errorData.message || createRes.statusText);
     }
   } catch (err) {
-    addSimLog(`[Real] [Fase 3: Recriação] ERRO ao recriar branch: ${err.message}`, 'error');
-    simulationActive.value = false;
+    addPipelineLog(`[Fase 3: Recriação] ERRO ao recriar branch: ${err.message}`, 'error');
+    pipelineActive.value = false;
     return;
   }
 
   // Passo 4: Conclusão
   await new Promise(resolve => setTimeout(resolve, 1200));
-  simulationStep.value = 4;
-  addSimLog(`[Real] === PIPELINE DE RECONSTRUÇÃO CONCLUÍDO ===`, 'success');
-  addSimLog(`[Real] Ambiente '${target}' reconstruído e limpo a partir de '${baseRef}'!`, 'success');
-  simulationActive.value = false;
+  pipelineStep.value = 4;
+  addPipelineLog(`=== PIPELINE DE RECONSTRUÇÃO CONCLUÍDO ===`, 'success');
+  addPipelineLog(`Ambiente '${target}' reconstruído e limpo a partir de '${baseRef}'!`, 'success');
+  pipelineActive.value = false;
 };
 
 const runIndividualMerge = async (branchName) => {
@@ -676,7 +660,7 @@ const executeDeleteBranch = async () => {
     if (res.ok) {
       addMergeLog(`[Deleção] Branch '${branchName}' DELETADA do GitLab com sucesso!`, 'success');
       // Remove da lista exibida
-      simulationBranches.value = simulationBranches.value.filter(b => b.name !== branchName);
+      activeBranches.value = activeBranches.value.filter(b => b.name !== branchName);
     } else {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || res.statusText);
@@ -730,7 +714,7 @@ const executeBulkDelete = async () => {
 
       if (res.ok) {
         addMergeLog(`[Lote] Branch '${branchName}' DELETADA com sucesso!`, 'success');
-        simulationBranches.value = simulationBranches.value.filter(b => b.name !== branchName);
+        activeBranches.value = activeBranches.value.filter(b => b.name !== branchName);
       } else {
         const errorData = await res.json().catch(() => ({}));
         addMergeLog(`[Lote] Erro ao deletar '${branchName}': ${errorData.message || res.statusText}`, 'error');
@@ -785,13 +769,13 @@ const toggleTheme = () => {
             : 'bg-amber-500/10 border-amber-500/20 text-amber-400'"
         >
           <CloudLightning class="w-3.5 h-3.5" />
-          {{ settingsStore.gitlabToken && settingsStore.gitlabProjectId ? 'GitLab Ativo' : 'Modo Offline (Simulado)' }}
+          {{ settingsStore.gitlabToken && settingsStore.gitlabProjectId ? 'GitLab Ativo' : 'Sem Conexão (Modo Offline)' }}
         </div>
 
         <!-- Botão Alternar Tema (Claro/Escuro) -->
         <button 
           @click="toggleTheme"
-          class="p-2.5 bg-white/5 hover:bg-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-slate-300 hover:text-white rounded-[var(--app-input-radius)] transition-all cursor-pointer border border-white/[0.06] flex items-center justify-center shrink-0"
+          class="btn-icon-secondary"
           :title="settingsStore.theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'"
         >
           <Sun v-if="settingsStore.theme === 'dark'" class="w-4 h-4 text-amber-400" />
@@ -800,7 +784,7 @@ const toggleTheme = () => {
 
         <button 
           @click="openSettings"
-          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-[var(--app-input-radius)] transition-all cursor-pointer shadow-lg shadow-indigo-500/10 shrink-0"
+          class="btn btn-primary flex items-center gap-2 px-5 py-2.5 text-xs font-black uppercase tracking-wider shadow-lg shadow-indigo-500/10 shrink-0"
         >
           <Settings class="w-4 h-4" />
           Configurar Ambientes
@@ -898,45 +882,45 @@ const toggleTheme = () => {
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-6">
           <button 
-            @click="runRebuildSimulation('dev')"
-            :disabled="simulationActive"
-            class="flex-1 flex items-center justify-center gap-3 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
+            @click="runRebuildPipeline('dev')"
+            :disabled="pipelineActive"
+            class="btn flex-1 flex items-center justify-center gap-3 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-500/10 cursor-pointer"
           >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': simulationActive && simulationTarget === 'dev' }" />
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
             Recriar {{ settingsStore.branchDesenvolvimento }}
           </button>
           
           <button 
-            @click="runRebuildSimulation('hml')"
-            :disabled="simulationActive"
-            class="flex-1 flex items-center justify-center gap-3 py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/10 disabled:opacity-50 cursor-pointer"
+            @click="runRebuildPipeline('hml')"
+            :disabled="pipelineActive"
+            class="btn btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider rounded-[var(--app-card-radius)] shadow-lg shadow-indigo-500/10 cursor-pointer"
           >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': simulationActive && simulationTarget === 'hml' }" />
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
             Recriar {{ settingsStore.branchHomologacao }}
           </button>
         </div>
 
-        <!-- Simulator Output Section -->
-        <div v-if="simulationTarget" class="p-6 md:p-8 bg-slate-950/40 rounded-[var(--app-card-radius)] border border-white/[0.06] space-y-8 animate-fadeIn">
+        <!-- Pipeline Output Section -->
+        <div v-if="pipelineTarget" class="p-6 md:p-8 bg-slate-950/40 rounded-[var(--app-card-radius)] border border-white/[0.06] space-y-8 animate-fadeIn">
           <!-- Pipeline Stepper -->
           <div class="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-6">
-            <div class="flex items-center gap-2.5" :class="simulationStep >= 1 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="simulationStep >= 1 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">1</span>
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 1 ? 'text-indigo-400' : 'text-slate-500'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 1 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">1</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Backup</span>
             </div>
             <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="simulationStep >= 2 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="simulationStep >= 2 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">2</span>
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 2 ? 'text-indigo-400' : 'text-slate-500'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 2 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">2</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Destruição</span>
             </div>
             <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="simulationStep >= 3 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="simulationStep >= 3 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">3</span>
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 3 ? 'text-indigo-400' : 'text-slate-500'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 3 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">3</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Recriação</span>
             </div>
             <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="simulationStep >= 4 ? 'text-emerald-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="simulationStep >= 4 ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600'">✓</span>
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 4 ? 'text-emerald-400' : 'text-slate-500'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 4 ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600'">✓</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Concluído</span>
             </div>
           </div>
@@ -949,7 +933,7 @@ const toggleTheme = () => {
                 <h4 class="text-sm font-black text-white">Ação Destrutiva Pendente</h4>
                 <p class="text-[10px] text-slate-400 font-medium mt-1 mb-2">Você está prestes a excluir a branch antiga do GitLab para alinhá-la limpa com a master.</p>
                 <code class="px-2.5 py-1 bg-black/40 text-red-400 rounded-[var(--app-input-radius)] text-[10px] font-mono border border-red-500/20 shadow-inner">
-                  git push origin --delete {{ simulationTarget === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao }}
+                  git push origin --delete {{ pipelineTarget === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao }}
                 </code>
               </div>
             </div>
@@ -968,7 +952,7 @@ const toggleTheme = () => {
               Console de Logs Git
             </h4>
             <TerminalConsole
-              :logs="simulationLogs"
+              :logs="pipelineLogs"
               :consoleFontSize="settingsStore.consoleFontSize"
               placeholder="Aguardando início..."
               @increase-font-size="increaseFontSize"
@@ -1099,7 +1083,7 @@ const toggleTheme = () => {
             <button 
               type="button" 
               @click="testConnection"
-              class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors border border-white/5"
+              class="btn-secondary text-[10px]"
             >
               Testar Conexão
             </button>

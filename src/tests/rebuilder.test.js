@@ -64,9 +64,9 @@ describe("GitRebuilder.vue", () => {
     settings.gitlabToken = '';
     settings.gitlabProjectId = '';
 
-    await wrapper.vm.runRebuildSimulation('dev');
+    await wrapper.vm.runRebuildPipeline('dev');
     
-    const logs = wrapper.vm.simulationLogs;
+    const logs = wrapper.vm.pipelineLogs;
     expect(logs).toHaveLength(1);
     expect(logs[0].text).toContain("Credenciais do GitLab não configuradas");
     expect(logs[0].type).toBe("error");
@@ -82,7 +82,7 @@ describe("GitRebuilder.vue", () => {
     wrapper.vm.activeTab = "merges";
     wrapper.vm.mergeTarget = "dev-06";
     wrapper.vm.branchesFetched = true;
-    wrapper.vm.simulationBranches = [
+    wrapper.vm.activeBranches = [
       { name: "feature/test-branch", mr: null, title: "Test Title", status: "waiting", committedDate: "2026-05-24T00:00:00Z", authorName: "Tester" }
     ];
     await wrapper.vm.$nextTick();
