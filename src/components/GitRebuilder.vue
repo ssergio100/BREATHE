@@ -9,6 +9,9 @@ import {
 import { useSettingsStore } from '../stores/settingsStore';
 import BaseModal from './BaseModal.vue';
 import AppInput from './base/AppInput.vue';
+import TerminalConsole from './TerminalConsole.vue';
+import BranchList from './BranchList.vue';
+import ActionPanel from './ActionPanel.vue';
 
 const settingsStore = useSettingsStore();
 
@@ -728,25 +731,7 @@ const toggleBranchSelection = (branchName) => {
   }
 };
 
-// --- ROLAGEM AUTOMÁTICA DOS CONSOLES ---
-const simConsoleEl = ref(null);
-const mergeConsoleEl = ref(null);
-
-watch(simulationLogs, () => {
-  nextTick(() => {
-    if (simConsoleEl.value) {
-      simConsoleEl.value.scrollTop = simConsoleEl.value.scrollHeight;
-    }
-  });
-}, { deep: true });
-
-watch(mergeLogs, () => {
-  nextTick(() => {
-    if (mergeConsoleEl.value) {
-      mergeConsoleEl.value.scrollTop = mergeConsoleEl.value.scrollHeight;
-    }
-  });
-}, { deep: true });
+// --- ROLAGEM AUTOMÁTICA DOS CONSOLES TRATADA INTERNAMENTE NOS SUBCOMPONENTES ---
 
 const toggleTheme = () => {
   settingsStore.theme = settingsStore.theme === 'dark' ? 'light' : 'dark';
@@ -963,58 +948,15 @@ const toggleTheme = () => {
               <Terminal class="w-4 h-4 text-indigo-400" />
               Console de Logs Git
             </h4>
-            <div class="border border-white/[0.06] rounded-2xl overflow-hidden bg-black/95 flex flex-col">
-              <div 
-                ref="simConsoleEl"
-                :style="{ fontSize: settingsStore.consoleFontSize + 'px' }" 
-                class="p-5 font-mono leading-relaxed text-slate-300 min-h-[300px] max-h-[300px] overflow-y-auto custom-scrollbar flex flex-col gap-2"
-              >
-                <div v-if="simulationLogs.length === 0" class="text-slate-600 italic">Aguardando início...</div>
-                <div 
-                  v-for="(log, idx) in simulationLogs" 
-                  :key="idx"
-                  :class="{
-                    'text-slate-400': log.type === 'info',
-                    'text-emerald-400': log.type === 'success',
-                    'text-amber-400': log.type === 'warning',
-                    'text-red-400 font-bold': log.type === 'error'
-                  }"
-                >
-                  <span class="text-slate-600">[{{ log.time }}]</span> {{ log.text }}
-                </div>
-              </div>
-            
-            <!-- Ajuste de Fonte na Base do Console -->
-            <div class="flex items-center justify-between px-5 py-2 bg-slate-950/80 border-t border-white/[0.06] text-[9px] font-black text-slate-400 uppercase tracking-wider select-none">
-              <div class="flex items-center gap-1.5">
-                <Terminal class="w-3.5 h-3.5 text-indigo-400" />
-                Console Rebuilder
-              </div>
-              <div class="flex items-center gap-2">
-                <span>Tamanho do Texto:</span>
-                <div class="flex items-center bg-black/40 border border-white/[0.05] rounded-lg p-0.5">
-                  <button 
-                    type="button"
-                    @click="decreaseFontSize"
-                    class="px-2 py-0.5 hover:bg-white/5 rounded text-xs transition-colors cursor-pointer text-slate-400 hover:text-white"
-                    title="Diminuir fonte"
-                  >
-                    -
-                  </button>
-                  <span class="px-1.5 text-[9px] font-mono text-indigo-400">{{ settingsStore.consoleFontSize }}px</span>
-                  <button 
-                    type="button"
-                    @click="increaseFontSize"
-                    class="px-2 py-0.5 hover:bg-white/5 rounded text-xs transition-colors cursor-pointer text-slate-400 hover:text-white"
-                    title="Aumentar fonte"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
+            <TerminalConsole
+              :logs="simulationLogs"
+              :consoleFontSize="settingsStore.consoleFontSize"
+              placeholder="Aguardando início..."
+              @increase-font-size="increaseFontSize"
+              @decrease-font-size="decreaseFontSize"
+              class="min-h-[300px] max-h-[300px]"
+            />
           </div>
-        </div>
       </div>
     </div>
 
@@ -1023,255 +965,52 @@ const toggleTheme = () => {
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full flex-1 min-h-0">
 
           <!-- Coluna 1 (Lado Esquerdo): Branches Disponíveis (5 colunas) -->
-          <div class="md:col-span-5 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
-            <div class="flex items-center justify-between h-6 shrink-0">
-              <h4 class="text-[10px] font-black text-slate-555 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <History class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                Branches Disponíveis
-              </h4>
-            </div>
+          <BranchList
+            v-model:searchQuery="searchQuery"
+            :branchesFetched="branchesFetched"
+            :branchesLoading="branchesLoading"
+            :branchesError="branchesError"
+            :filteredBranches="filteredBranches"
+            :selectedBranches="selectedBranches"
+            :branchesOrder="branchesOrder"
+            :totalBranchesCount="totalBranchesCount"
+            :mergeLoadingMap="mergeLoadingMap"
+            :mergeStatusMap="mergeStatusMap"
+            @search="handleSearch"
+            @toggle-order="toggleOrderAndRefetch"
+            @toggle-selection="toggleBranchSelection"
+            class="md:col-span-5"
+          />
 
-            <!-- Campo de Busca e Ordenação -->
-            <div class="flex gap-2.5 items-center h-10 shrink-0">
-              <div class="relative flex-1 min-w-0 h-full">
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Buscar branch..."
-                  :disabled="!branchesFetched"
-                  class="w-full h-full bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/[0.06] rounded-xl pl-4 pr-10 py-0 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all font-mono min-w-0 disabled:opacity-50"
-                  @input="handleSearch"
-                />
-                <div class="absolute right-3 top-2.5 flex items-center gap-1.5 pointer-events-none">
-                  <RefreshCw v-if="branchesLoading" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 animate-spin" />
-                  <Search v-else class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                </div>
-              </div>
+          <!-- Coluna 2 (Centro): Painel de Controle de Ambiente e Lote (3 colunas) -->
+          <ActionPanel
+            :selectedBranches="selectedBranches"
+            :branchesLoading="branchesLoading"
+            :branchDesenvolvimento="settingsStore.branchDesenvolvimento"
+            :branchHomologacao="settingsStore.branchHomologacao"
+            @list-all-branches="listAllBranches"
+            @merge-to-target="runMergeToTarget"
+            @bulk-delete="requestBulkDelete"
+            class="md:col-span-3"
+          />
 
-              <!-- Total de branches na mesma linha do input de busca -->
-              <span v-if="branchesFetched && totalBranchesCount > 0" class="px-2.5 h-full bg-indigo-500/10 text-indigo-655 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wider rounded-xl border border-indigo-500/20 whitespace-nowrap flex items-center shrink-0">
-                Total: {{ totalBranchesCount }}
-              </span>
-
-              <!-- Botão de ordenação com texto dinâmico -->
-              <button
-                type="button"
-                @click="toggleOrderAndRefetch"
-                :disabled="!branchesFetched"
-                class="h-full px-3.5 bg-white/85 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200 dark:border-white/[0.06] rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider shrink-0 disabled:opacity-50"
-                :title="branchesOrder === 'desc' ? 'Ordenando do mais novo ao mais antigo' : 'Ordenando do mais antigo ao mais novo'"
-              >
-                <ArrowUpDown class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>{{ branchesOrder === 'desc' ? 'Mais recente' : 'Mais antigo' }}</span>
-              </button>
-            </div>
-
-            <!-- Listagem das branches com altura calculada para alinhar com os vizinhos -->
-            <div class="space-y-2 overflow-y-auto pr-2 custom-scrollbar max-h-[calc(100vh-320px)] flex-1 min-h-0">
-              <div v-if="!branchesFetched" class="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-250 dark:border-white/[0.06] rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] flex flex-col items-center justify-center gap-2 h-full">
-                <GitBranch class="w-6 h-6 text-slate-400 dark:text-slate-655 animate-pulse" />
-                <span>Clique em "Listar branches" no controle central para carregar as branches de feature.</span>
-              </div>
-              <div v-else-if="branchesError" class="p-6 text-center text-xs text-red-400 border border-dashed border-red-500/20 rounded-2xl bg-red-500/5 flex flex-col items-center gap-2">
-                <AlertCircle class="w-5 h-5 text-red-500 animate-pulse" />
-                <span>{{ branchesError }}</span>
-              </div>
-              <div v-else-if="filteredBranches.length === 0" class="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-white/[0.06] rounded-2xl flex flex-col items-center justify-center gap-2 h-full">
-                <span>Nenhuma branch ativa encontrada.</span>
-              </div>
-              <div
-                v-else
-                v-for="branch in filteredBranches"
-                :key="branch.name"
-                @click="toggleBranchSelection(branch.name)"
-                class="flex items-center justify-between p-3 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/[0.04] rounded-xl hover:border-indigo-500/20 dark:hover:border-white/10 transition-colors cursor-pointer"
-              >
-                <!-- Checkbox de Seleção Individual Premium Encorpado -->
-                <div class="flex items-center shrink-0 pr-3">
-                  <div class="w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center"
-                       :class="selectedBranches.includes(branch.name)
-                         ? 'border-indigo-500 bg-indigo-600 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
-                         : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/80 group-hover:border-slate-400 dark:group-hover:border-slate-500'"
-                  >
-                    <svg
-                      class="w-3 h-3 text-white transition-transform duration-200"
-                      :class="selectedBranches.includes(branch.name) ? 'scale-100' : 'scale-0'"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="4.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                </div>
-
-                <div class="min-w-0 flex-1 pr-4">
-                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <p class="text-xs font-black text-slate-800 dark:text-white leading-tight font-mono truncate" :title="branch.name">{{ branch.name }}</p>
-                  </div>
-                  <p class="text-[9px] text-slate-455 dark:text-slate-550 font-bold mt-1 truncate">
-                    {{ branch.title || 'Último commit ativo' }}
-                  </p>
-                </div>
-
-                <!-- Data do Último Commit Alinhada à Direita (fora do @click.stop) -->
-                <span v-if="branch.committedDate" class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800/90 text-slate-655 dark:text-slate-350 px-3 py-1 rounded-lg border border-slate-200 dark:border-white/[0.06] tracking-wide whitespace-nowrap mr-2 shrink-0">
-                  Último Commit: {{ formatDate(branch.committedDate) }}
-                </span>
-
-                <div class="flex items-center gap-2 shrink-0" @click.stop>
-                  <!-- Loading State -->
-                  <span v-if="mergeLoadingMap[branch.name]" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-indigo-500/10 text-indigo-655 dark:text-indigo-400 border border-indigo-500/20">
-                    <RefreshCw class="w-3 h-3 text-indigo-500 dark:text-indigo-400 animate-spin" />
-                    Mesclando
-                  </span>
-
-                  <!-- Status Map Checks -->
-                  <template v-else>
-                    <span v-if="mergeStatusMap[branch.name] === 'success'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20">
-                      <Check class="w-3 h-3 text-emerald-555 dark:text-emerald-450" />
-                      Mesclado
-                    </span>
-                    <span v-else-if="mergeStatusMap[branch.name] === 'conflict'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-red-500/10 text-red-655 dark:text-red-400 border border-red-500/20" title="Resolva Conflitos no GitLab">
-                      <AlertCircle class="w-3 h-3 text-red-505 dark:text-red-450" />
-                      Conflito
-                    </span>
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Coluna 2 (Centro): Painel de Controle de Ambiente e Lote (2 colunas) -->
-          <div class="md:col-span-3 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
-            <div class="flex items-center justify-between h-6 shrink-0">
-              <h4 class="text-[10px] font-black text-slate-555 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Settings class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                Controle
-              </h4>
-            </div>
-
-            <!-- Painel de Controle de Ambiente e Ações -->
-            <div class="border border-slate-200 dark:border-white/[0.06] rounded-2xl bg-white dark:bg-slate-900/40 p-4 flex flex-col justify-between gap-4 max-h-[calc(100vh-280px)] flex-1 min-h-0">
-
-              <!-- Botões de Ações Centralizados e Harmonizados em Tamanho -->
-              <div class="flex-1 flex flex-col gap-3 justify-center">
-                <!-- Botão Listar branches (sempre visível e ativo) -->
-                <button
-                  @click="listAllBranches"
-                  :disabled="branchesLoading"
-                  class="w-full py-4 px-2 rounded-xl border bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1 shrink-0 shadow-lg shadow-indigo-500/10 disabled:opacity-50"
-                >
-                  <span class="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
-                    <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': branchesLoading }" />
-                    Listar branches
-                  </span>
-                </button>
-
-                <!-- Divisor Visual caso tenhamos seleção -->
-                <div v-if="selectedBranches.length > 0" class="w-full h-px bg-slate-100 dark:bg-white/[0.04] my-1"></div>
-
-                <!-- Botões DEV e HML (Habilitados apenas se exatamente 1 branch selecionada) -->
-                <template v-if="selectedBranches.length === 1">
-                  <!-- Botão DEV (Desenvolvimento) -->
-                  <button
-                    @click="runMergeToTarget(settingsStore.branchDesenvolvimento || 'dev-06', 'dev')"
-                    class="w-full py-4 px-2 rounded-xl border bg-amber-500/10 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1 shrink-0"
-                  >
-                    <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ settingsStore.branchDesenvolvimento || 'dev-06' }}</span>
-                  </button>
-
-                  <!-- Botão HML (Homologação) -->
-                  <button
-                    @click="runMergeToTarget(settingsStore.branchHomologacao || 'hml', 'hml')"
-                    class="w-full py-4 px-2 rounded-xl border bg-indigo-500/10 border-indigo-500 text-indigo-650 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1 shrink-0"
-                  >
-                    <span class="text-[11px] font-black uppercase tracking-wider">Mesclar com {{ settingsStore.branchHomologacao || 'hml' }}</span>
-                  </button>
-                </template>
-
-                <!-- Botão Excluir em Lote (Habilitado apenas se mais de 1 branch selecionada) -->
-                <template v-if="selectedBranches.length > 1">
-                  <button
-                    @click="requestBulkDelete"
-                    class="w-full py-4 px-2 rounded-xl border bg-red-500/10 border-red-500 text-red-655 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1 shrink-0 shadow-md"
-                  >
-                    <span class="text-[11px] font-black uppercase tracking-wider text-center">Excluir</span>
-                    <span class="text-[8px] font-bold">
-                      Marcadas: {{ selectedBranches.length }}
-                    </span>
-                  </button>
-                </template>
-              </div>
-
-              <div class="pt-2 border-t border-slate-150 dark:border-white/[0.04] text-center shrink-0">
-                <span class="text-[8px] font-black text-slate-455 dark:text-slate-550 uppercase tracking-widest">Git</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Coluna 3 (Lado Direito): Console de Operações (5 colunas) -->
+          <!-- Coluna 3 (Lado Direito): Console de Operações (4 colunas) -->
           <div class="md:col-span-4 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
             <div class="flex items-center justify-between h-6 shrink-0">
-              <h4 class="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <h4 class="text-[10px] font-black text-app-muted uppercase tracking-widest flex items-center gap-2">
                 <Terminal class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                 Console de Operações [TERMINAL DIREITO]
               </h4>
             </div>
 
-            <div class="border border-slate-200 dark:border-white/[0.06] rounded-2xl overflow-hidden bg-black/95 flex flex-col shadow-xl max-h-[calc(100vh-280px)] flex-1 min-h-0">
-              <div
-                ref="mergeConsoleEl"
-                :style="{ fontSize: settingsStore.consoleFontSize + 'px' }"
-                class="p-5 font-mono leading-relaxed text-slate-350 overflow-y-auto custom-scrollbar flex flex-col gap-2 flex-1"
-              >
-                <div v-if="mergeLogs.length === 0" class="text-slate-600 italic">Selecione DEV ou HML no centro para carregar as branches...</div>
-                <div
-                  v-for="(log, idx) in mergeLogs"
-                  :key="idx"
-                  :class="{
-                    'text-slate-400': log.type === 'info',
-                    'text-emerald-400': log.type === 'success',
-                    'text-amber-400': log.type === 'warning',
-                    'text-red-400 font-bold': log.type === 'error'
-                  }"
-                >
-                  <span class="text-slate-655">[{{ log.time }}]</span> {{ log.text }}
-                </div>
-              </div>
-
-              <!-- Ajuste de Fonte na Base do Console -->
-              <div class="flex items-center justify-between px-5 py-2 bg-slate-950/90 dark:bg-slate-950/80 border-t border-slate-900/60 dark:border-white/[0.06] text-[9px] font-black text-slate-400 uppercase tracking-wider select-none shrink-0">
-                <div class="flex items-center gap-1.5">
-                  <Terminal class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                  Console
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center bg-black/40 border border-white/[0.05] rounded-lg p-0.5">
-                    <button
-                      type="button"
-                      @click="decreaseFontSize"
-                      class="px-2 py-0.5 hover:bg-white/5 rounded text-xs transition-colors cursor-pointer text-slate-400 hover:text-white"
-                      title="Diminuir fonte"
-                    >
-                      -
-                    </button>
-                    <span class="px-1.5 text-[9px] font-mono text-indigo-400">{{ settingsStore.consoleFontSize }}px</span>
-                    <button
-                      type="button"
-                      @click="increaseFontSize"
-                      class="px-2 py-0.5 hover:bg-white/5 rounded text-xs transition-colors cursor-pointer text-slate-400 hover:text-white"
-                      title="Aumentar fonte"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TerminalConsole
+              :logs="mergeLogs"
+              :consoleFontSize="settingsStore.consoleFontSize"
+              placeholder="Selecione DEV ou HML no centro para carregar as branches..."
+              @increase-font-size="increaseFontSize"
+              @decrease-font-size="decreaseFontSize"
+              class="max-h-[calc(100vh-280px)]"
+            />
           </div>
 
         </div>
