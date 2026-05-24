@@ -31,7 +31,7 @@ watch(() => props.logs, () => {
 </script>
 
 <template>
-  <div class="border border-slate-200 dark:border-white/[0.06] rounded-2xl overflow-hidden bg-black/95 flex flex-col shadow-xl flex-1 min-h-0">
+  <div class="border border-slate-200 dark:border-white/[0.06] rounded-[var(--app-card-radius)] overflow-hidden bg-black/95 flex flex-col shadow-xl flex-1 min-h-0">
     <!-- Console de Texto -->
     <div
       ref="consoleEl"
@@ -63,7 +63,7 @@ watch(() => props.logs, () => {
       </div>
       <div class="flex items-center gap-2">
         <span class="text-slate-500">Texto:</span>
-        <div class="flex items-center bg-black/40 border border-white/[0.05] rounded-lg p-0.5">
+        <div class="flex items-center bg-black/40 border border-white/[0.05] rounded-[var(--app-input-radius)] p-0.5">
           <button
             type="button"
             @click="$emit('decrease-font-size')"

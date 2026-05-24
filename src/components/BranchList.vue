@@ -174,18 +174,18 @@ const formatDate = (dateString) => {
 
         <div class="flex items-center gap-2 shrink-0" @click.stop>
           <!-- Loading State -->
-          <span v-if="mergeLoadingMap[branch.name]" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border border-indigo-500/20">
+          <span v-if="mergeLoadingMap[branch.name]" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-[var(--app-input-radius)] tracking-wider bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border border-indigo-500/20">
             <RefreshCw class="w-3 h-3 text-indigo-500 dark:text-indigo-400 animate-spin" />
             Mesclando
           </span>
 
           <!-- Status Map Checks -->
           <template v-else>
-            <span v-if="mergeStatusMap[branch.name] === 'success'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20">
+            <span v-if="mergeStatusMap[branch.name] === 'success'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-[var(--app-input-radius)] tracking-wider bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20">
               <Check class="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
               Mesclado
             </span>
-            <span v-else-if="mergeStatusMap[branch.name] === 'conflict'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-lg tracking-wider bg-red-500/10 text-red-650 dark:text-red-400 border border-red-500/20" title="Resolva Conflitos no GitLab">
+            <span v-else-if="mergeStatusMap[branch.name] === 'conflict'" class="flex items-center gap-1.5 px-2.5 py-1 text-[8px] font-black uppercase rounded-[var(--app-input-radius)] tracking-wider bg-red-500/10 text-red-650 dark:text-red-400 border border-red-500/20" title="Resolva Conflitos no GitLab">
               <AlertCircle class="w-3 h-3 text-red-500 dark:text-red-400" />
               Conflito
             </span>

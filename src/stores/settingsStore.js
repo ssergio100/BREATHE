@@ -14,6 +14,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const branchDesenvolvimento = ref('dev-06');
   
   const consoleFontSize = ref(11); // Tamanho em pixels
+  const cardRadius = ref(16); // Em pixels
+  const inputRadius = ref(8); // Em pixels
 
   const isInitialized = ref(false);
 
@@ -31,9 +33,12 @@ export const useSettingsStore = defineStore('settings', () => {
       if (settingsMap['branchHomologacao'] !== undefined) branchHomologacao.value = settingsMap['branchHomologacao'];
       if (settingsMap['branchDesenvolvimento'] !== undefined) branchDesenvolvimento.value = settingsMap['branchDesenvolvimento'];
       if (settingsMap['consoleFontSize'] !== undefined) consoleFontSize.value = parseInt(settingsMap['consoleFontSize'], 10);
+      if (settingsMap['cardRadius'] !== undefined) cardRadius.value = parseInt(settingsMap['cardRadius'], 10);
+      if (settingsMap['inputRadius'] !== undefined) inputRadius.value = parseInt(settingsMap['inputRadius'], 10);
 
-      // Aplicar tema carregado
+      // Aplicar tema e raios carregados
       applyTheme(theme.value);
+      applyRadius(cardRadius.value, inputRadius.value);
 
       isInitialized.value = true;
     } catch (error) {
@@ -60,7 +65,9 @@ export const useSettingsStore = defineStore('settings', () => {
       { key: 'branchMaster', value: branchMaster.value },
       { key: 'branchHomologacao', value: branchHomologacao.value },
       { key: 'branchDesenvolvimento', value: branchDesenvolvimento.value },
-      { key: 'consoleFontSize', value: consoleFontSize.value }
+      { key: 'consoleFontSize', value: consoleFontSize.value },
+      { key: 'cardRadius', value: cardRadius.value },
+      { key: 'inputRadius', value: inputRadius.value }
     ];
 
     try {
@@ -81,10 +88,25 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   };
 
+  const applyRadius = (cardRad, inputRad) => {
+    document.documentElement.style.setProperty('--app-card-radius', `${cardRad}px`);
+    document.documentElement.style.setProperty('--app-input-radius', `${inputRad}px`);
+  };
+
   // Observa mudanças de tema
   watch(theme, (newTheme) => {
     applyTheme(newTheme);
     saveSetting('theme', newTheme);
+  });
+
+  watch(cardRadius, (newVal) => {
+    document.documentElement.style.setProperty('--app-card-radius', `${newVal}px`);
+    saveSetting('cardRadius', newVal);
+  });
+
+  watch(inputRadius, (newVal) => {
+    document.documentElement.style.setProperty('--app-input-radius', `${newVal}px`);
+    saveSetting('inputRadius', newVal);
   });
 
   return {
@@ -96,6 +118,8 @@ export const useSettingsStore = defineStore('settings', () => {
     branchHomologacao,
     branchDesenvolvimento,
     consoleFontSize,
+    cardRadius,
+    inputRadius,
     isInitialized,
     loadSettings,
     saveSetting,

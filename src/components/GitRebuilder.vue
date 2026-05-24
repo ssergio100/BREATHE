@@ -57,6 +57,16 @@ const editBranchMaster = ref(settingsStore.branchMaster);
 const editBranchHomologacao = ref(settingsStore.branchHomologacao);
 const editBranchDesenvolvimento = ref(settingsStore.branchDesenvolvimento);
 const editConsoleFontSize = ref(settingsStore.consoleFontSize);
+const editCardRadius = ref(settingsStore.cardRadius);
+const editInputRadius = ref(settingsStore.inputRadius);
+
+watch(editCardRadius, (newVal) => {
+  document.documentElement.style.setProperty('--app-card-radius', `${newVal}px`);
+});
+
+watch(editInputRadius, (newVal) => {
+  document.documentElement.style.setProperty('--app-input-radius', `${newVal}px`);
+});
 
 // Modal de deleção
 const showDeleteConfirmModal = ref(false);
@@ -81,6 +91,8 @@ const openSettings = () => {
   editBranchHomologacao.value = settingsStore.branchHomologacao;
   editBranchDesenvolvimento.value = settingsStore.branchDesenvolvimento;
   editConsoleFontSize.value = settingsStore.consoleFontSize;
+  editCardRadius.value = settingsStore.cardRadius;
+  editInputRadius.value = settingsStore.inputRadius;
   diagnosticStatus.value = null;
   diagnosticMessage.value = '';
   showSettingsModal.value = true;
@@ -94,6 +106,8 @@ const saveSettings = async () => {
   settingsStore.branchHomologacao = editBranchHomologacao.value;
   settingsStore.branchDesenvolvimento = editBranchDesenvolvimento.value;
   settingsStore.consoleFontSize = editConsoleFontSize.value;
+  settingsStore.cardRadius = editCardRadius.value;
+  settingsStore.inputRadius = editInputRadius.value;
   
   await settingsStore.saveAllSettings();
   showSettingsModal.value = false;
@@ -115,6 +129,13 @@ const decreaseFontSize = () => {
     settingsStore.consoleFontSize--;
     settingsStore.saveSetting('consoleFontSize', settingsStore.consoleFontSize);
   }
+};
+
+const closeSettings = () => {
+  // Reverte as CSS variables para os valores salvos na store
+  document.documentElement.style.setProperty('--app-card-radius', `${settingsStore.cardRadius}px`);
+  document.documentElement.style.setProperty('--app-input-radius', `${settingsStore.inputRadius}px`);
+  showSettingsModal.value = false;
 };
 
 const increaseFontSize = () => {
@@ -758,7 +779,7 @@ const toggleTheme = () => {
       <div class="flex items-center gap-4">
         <!-- Diagnóstico Rápido -->
         <div 
-          class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider"
+          class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-[var(--app-input-radius)] border text-[10px] font-black uppercase tracking-wider"
           :class="settingsStore.gitlabToken && settingsStore.gitlabProjectId 
             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
             : 'bg-amber-500/10 border-amber-500/20 text-amber-400'"
@@ -770,7 +791,7 @@ const toggleTheme = () => {
         <!-- Botão Alternar Tema (Claro/Escuro) -->
         <button 
           @click="toggleTheme"
-          class="p-2.5 bg-white/5 hover:bg-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer border border-white/[0.06] flex items-center justify-center shrink-0"
+          class="p-2.5 bg-white/5 hover:bg-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-slate-300 hover:text-white rounded-[var(--app-input-radius)] transition-all cursor-pointer border border-white/[0.06] flex items-center justify-center shrink-0"
           :title="settingsStore.theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'"
         >
           <Sun v-if="settingsStore.theme === 'dark'" class="w-4 h-4 text-amber-400" />
@@ -779,7 +800,7 @@ const toggleTheme = () => {
 
         <button 
           @click="openSettings"
-          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-500/10 shrink-0"
+          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-[var(--app-input-radius)] transition-all cursor-pointer shadow-lg shadow-indigo-500/10 shrink-0"
         >
           <Settings class="w-4 h-4" />
           Configurar Ambientes
@@ -813,22 +834,20 @@ const toggleTheme = () => {
       </button>
     </div>
 
-    <!-- Main Container -->
     <main class="flex-1 md:overflow-hidden overflow-y-auto p-6 md:p-8 lg:py-6 lg:px-10 space-y-6 w-full max-w-full flex flex-col">
-      
       <!-- ABA 1: LIMPEZA E RECRIAÇÃO -->
       <div v-if="activeTab === 'rebuilder'" class="space-y-8 animate-fadeIn">
         <!-- Top Cards: Branch Overview -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- MASTER (PROTEGIDA) -->
-          <div data-test="master-card" class="p-6 bg-white dark:bg-slate-950/40 rounded-2xl border border-slate-200 dark:border-emerald-500/20 flex flex-col justify-between shadow-md dark:shadow-none relative overflow-hidden">
-            <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-lg border border-emerald-500/20">
+          <div data-test="master-card" class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-emerald-500/20 flex flex-col justify-between shadow-md dark:shadow-none relative overflow-hidden">
+            <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)] border border-emerald-500/20">
               <Lock class="w-3 h-3" />
               Protegida
             </div>
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-lg">Master / Produção</span>
+                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Master / Produção</span>
                 <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
               </div>
               <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono text-emerald-400 truncate pr-16" :title="settingsStore.branchMaster">
@@ -842,10 +861,10 @@ const toggleTheme = () => {
           </div>
 
           <!-- HOMOLOGAÇÃO -->
-          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-2xl border border-slate-200 dark:border-indigo-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
+          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-indigo-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-lg">Homologação</span>
+                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Homologação</span>
                 <div class="w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.3)]"></div>
               </div>
               <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono truncate" :title="settingsStore.branchHomologacao">
@@ -859,10 +878,10 @@ const toggleTheme = () => {
           </div>
 
           <!-- DESENVOLVIMENTO -->
-          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-2xl border border-slate-200 dark:border-amber-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
+          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-amber-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-lg">Desenvolvimento</span>
+                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Desenvolvimento</span>
                 <div class="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
               </div>
               <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono text-amber-400 truncate" :title="settingsStore.branchDesenvolvimento">
@@ -881,7 +900,7 @@ const toggleTheme = () => {
           <button 
             @click="runRebuildSimulation('dev')"
             :disabled="simulationActive"
-            class="flex-1 flex items-center justify-center gap-3 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
+            class="flex-1 flex items-center justify-center gap-3 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': simulationActive && simulationTarget === 'dev' }" />
             Recriar {{ settingsStore.branchDesenvolvimento }}
@@ -890,7 +909,7 @@ const toggleTheme = () => {
           <button 
             @click="runRebuildSimulation('hml')"
             :disabled="simulationActive"
-            class="flex-1 flex items-center justify-center gap-3 py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/10 disabled:opacity-50 cursor-pointer"
+            class="flex-1 flex items-center justify-center gap-3 py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-[var(--app-card-radius)] text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/10 disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': simulationActive && simulationTarget === 'hml' }" />
             Recriar {{ settingsStore.branchHomologacao }}
@@ -898,7 +917,7 @@ const toggleTheme = () => {
         </div>
 
         <!-- Simulator Output Section -->
-        <div v-if="simulationTarget" class="p-6 md:p-8 bg-slate-950/40 rounded-3xl border border-white/[0.06] space-y-8 animate-fadeIn">
+        <div v-if="simulationTarget" class="p-6 md:p-8 bg-slate-950/40 rounded-[var(--app-card-radius)] border border-white/[0.06] space-y-8 animate-fadeIn">
           <!-- Pipeline Stepper -->
           <div class="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-6">
             <div class="flex items-center gap-2.5" :class="simulationStep >= 1 ? 'text-indigo-400' : 'text-slate-500'">
@@ -923,20 +942,20 @@ const toggleTheme = () => {
           </div>
 
           <!-- Botão de Confirmação de Destruição -->
-          <div v-if="waitingForDestruction" class="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
+          <div v-if="waitingForDestruction" class="p-6 bg-red-500/10 border border-red-500/20 rounded-[var(--app-card-radius)] flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
             <div class="flex items-center gap-4 text-left">
               <AlertTriangle class="w-8 h-8 text-red-500 shrink-0" />
               <div>
                 <h4 class="text-sm font-black text-white">Ação Destrutiva Pendente</h4>
                 <p class="text-[10px] text-slate-400 font-medium mt-1 mb-2">Você está prestes a excluir a branch antiga do GitLab para alinhá-la limpa com a master.</p>
-                <code class="px-2.5 py-1 bg-black/40 text-red-400 rounded text-[10px] font-mono border border-red-500/20 shadow-inner">
+                <code class="px-2.5 py-1 bg-black/40 text-red-400 rounded-[var(--app-input-radius)] text-[10px] font-mono border border-red-500/20 shadow-inner">
                   git push origin --delete {{ simulationTarget === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao }}
                 </code>
               </div>
             </div>
             <button 
               @click="confirmDestruction"
-              class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-red-500/20 whitespace-nowrap"
+              class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-[var(--app-input-radius)] text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-red-500/20 whitespace-nowrap"
             >
               Autorizar Exclusão
             </button>
@@ -1028,8 +1047,8 @@ const toggleTheme = () => {
       :icon="Settings"
       okText="Salvar Configurações"
       cancelText="Cancelar"
-      @close="showSettingsModal = false"
-      @cancel="showSettingsModal = false"
+      @close="closeSettings"
+      @cancel="closeSettings"
       @ok="saveSettings"
     >
       <div class="space-y-5 text-left">
@@ -1123,6 +1142,50 @@ const toggleTheme = () => {
             </div>
           </div>
         </div>
+
+        <div class="w-full h-px bg-slate-200 dark:bg-white/[0.06] my-2"></div>
+
+        <!-- Border Radius Config Section -->
+        <div class="space-y-4">
+          <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
+            <Settings class="w-3.5 h-3.5" />
+            Ajuste de Arredondamento (Geometria Dinâmica)
+          </h4>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Slider para Card Radius -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <label class="text-[9px] font-black text-app-muted uppercase tracking-widest">Arredondamento de Cards</label>
+                <span class="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ editCardRadius }}px</span>
+              </div>
+              <input 
+                type="range" 
+                v-model.number="editCardRadius" 
+                min="0" 
+                max="32" 
+                step="2"
+                class="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <!-- Slider para Input Radius -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <label class="text-[9px] font-black text-app-muted uppercase tracking-widest">Arredondamento de Inputs/Botões</label>
+                <span class="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ editInputRadius }}px</span>
+              </div>
+              <input 
+                type="range" 
+                v-model.number="editInputRadius" 
+                min="0" 
+                max="16" 
+                step="1"
+                class="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </BaseModal>
 
@@ -1141,14 +1204,14 @@ const toggleTheme = () => {
       @ok="executeMergeAfterConfirm"
     >
       <div class="space-y-4 text-left">
-        <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-start gap-3">
+        <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-[var(--app-card-radius)] flex items-start gap-3">
           <Info class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
           <div class="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
             <p class="font-bold text-indigo-700 dark:text-indigo-400 mb-1">Ação de Integração:</p>
             Você está prestes a mesclar a branch de feature 
-            <span class="font-mono text-indigo-650 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-black/35 px-1.5 py-0.5 rounded">{{ mergeConfirmSourceBranch }}</span> 
+            <span class="font-mono text-indigo-650 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-black/35 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ mergeConfirmSourceBranch }}</span> 
             no ambiente de destino 
-            <span class="font-mono text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-black/35 px-1.5 py-0.5 rounded">{{ mergeConfirmTargetBranch }}</span>.
+            <span class="font-mono text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-black/35 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ mergeConfirmTargetBranch }}</span>.
           </div>
         </div>
       </div>
@@ -1171,11 +1234,11 @@ const toggleTheme = () => {
       @ok="executeDeleteBranch"
     >
       <div class="space-y-4 text-left">
-        <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+        <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-[var(--app-card-radius)] flex items-start gap-3">
           <AlertTriangle class="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
             <p class="font-bold text-red-700 dark:text-white mb-1">Atenção Especial:</p>
-            Você está prestes a excluir permanentemente a branch <span class="font-mono text-red-650 dark:text-red-400 font-bold bg-red-100 dark:bg-black/35 px-1.5 py-0.5 rounded">{{ branchToDelete }}</span> do repositório remoto GitLab. Esta ação não poderá ser desfeita.
+            Você está prestes a excluir permanentemente a branch <span class="font-mono text-red-650 dark:text-red-400 font-bold bg-red-100 dark:bg-black/35 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ branchToDelete }}</span> do repositório remoto GitLab. Esta ação não poderá ser desfeita.
           </div>
         </div>
 
@@ -1199,9 +1262,9 @@ const toggleTheme = () => {
       @ok="executeBulkDelete"
     >
       <div class="space-y-4 text-left">
-        <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+        <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-[var(--app-card-radius)] flex items-start gap-3">
           <AlertTriangle class="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-          <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          <div class="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
             <p class="font-bold text-red-700 dark:text-white mb-1">Confirmação de Ação Destrutiva:</p>
             Você está prestes a excluir permanentemente as <span class="text-red-605 dark:text-red-400 font-bold font-mono">{{ selectedBranches.length }}</span> branches selecionadas abaixo do repositório remoto GitLab.
           </div>
@@ -1211,7 +1274,7 @@ const toggleTheme = () => {
           <label class="text-[9px] font-black text-slate-500 dark:text-app-muted uppercase tracking-widest block">
             Branches selecionadas para deleção:
           </label>
-          <div class="bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06] rounded-xl p-3 max-h-[160px] overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-650 dark:text-slate-400 space-y-1">
+          <div class="bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06] rounded-[var(--app-card-radius)] p-3 max-h-[160px] overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-650 dark:text-slate-400 space-y-1">
             <div v-for="name in selectedBranches" :key="name" class="truncate flex items-center gap-1.5 text-red-600 dark:text-red-300">
               <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
               {{ name }}
