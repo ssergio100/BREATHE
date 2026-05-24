@@ -639,6 +639,13 @@ const runIndividualMerge = async (branchName) => {
     } else if (acceptRes.status === 406 || acceptRes.status === 409) {
       addMergeLog(`${prefix} CONFLITO DE MESCLAGEM DETECTADO! É necessária resolução manual.`, 'error');
       mergeStatusMap.value[branchName] = 'conflict';
+    } else if (acceptRes.status === 405) {
+      addMergeLog(`${prefix} OPERAÇÃO BLOQUEADA (HTTP 405). O GitLab não permite mesclar este Merge Request automaticamente. Causas comuns:`, 'warning');
+      addMergeLog(`- 1. Há conflitos de código pendentes entre as branches.`, 'warning');
+      addMergeLog(`- 2. A pipeline de CI/CD está rodando (e o GitLab exige sucesso antes de mesclar).`, 'warning');
+      addMergeLog(`- 3. Não há alterações pendentes a integrar (as branches já são idênticas).`, 'warning');
+      addMergeLog(`- 4. Existem discussões em aberto ou aprovações exigidas pendentes no GitLab.`, 'warning');
+      mergeStatusMap.value[branchName] = 'conflict';
     } else {
       const errorData = await acceptRes.json().catch(() => ({}));
       throw new Error(errorData.message || acceptRes.statusText);
