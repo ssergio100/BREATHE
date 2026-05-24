@@ -36,7 +36,7 @@ watch(() => props.logs, () => {
     <div
       ref="consoleEl"
       :style="{ fontSize: consoleFontSize + 'px' }"
-      class="p-5 font-mono leading-relaxed text-slate-350 overflow-y-auto custom-scrollbar flex flex-col gap-2 flex-1"
+      class="p-5 font-mono leading-relaxed text-slate-350 overflow-y-auto custom-scrollbar flex flex-col gap-2 flex-1 select-text"
     >
       <div v-if="logs.length === 0" class="text-slate-600 italic">
         {{ placeholder }}
