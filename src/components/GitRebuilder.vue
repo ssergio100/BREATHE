@@ -1005,144 +1005,152 @@ const toggleTheme = () => {
         <!-- Top Cards: Branch Overview -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- MASTER (PROTEGIDA) -->
-          <div data-test="master-card" class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-emerald-500/20 flex flex-col justify-between shadow-md dark:shadow-none relative overflow-hidden">
-            <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)] border border-emerald-500/20">
+          <div data-test="master-card" class="app-card-panel flex flex-col justify-between shadow-md relative overflow-hidden">
+            <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)] border border-emerald-500/20">
               <Lock class="w-3 h-3" />
               Protegida
             </div>
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Master / Produção</span>
+                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Master / Produção</span>
                 <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
               </div>
-              <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono text-emerald-400 truncate pr-16" :title="settingsStore.branchMaster">
+              <h3 class="text-xl font-black text-app-main font-mono text-emerald-500 dark:text-emerald-400 truncate pr-16" :title="settingsStore.branchMaster">
                 {{ settingsStore.branchMaster }}
               </h3>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Origem Estável</p>
-              <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium">Nenhuma ação permitida. Serve como base de segurança e integridade.</p>
+            <div class="mt-6 pt-4 border-t border-app-border-light">
+              <p class="text-[10px] text-app-muted font-bold uppercase">Origem Estável</p>
+              <p class="text-[9px] text-app-sub mt-0.5 font-medium">Nenhuma ação permitida. Serve como base de segurança e integridade.</p>
             </div>
           </div>
 
           <!-- HOMOLOGAÇÃO -->
-          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-indigo-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
+          <div class="app-card-panel flex flex-col justify-between shadow-md group">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Homologação</span>
+                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Homologação</span>
                 <div class="w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.3)]"></div>
               </div>
-              <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono truncate" :title="settingsStore.branchHomologacao">
+              <h3 class="text-xl font-black text-app-main font-mono truncate" :title="settingsStore.branchHomologacao">
                 {{ settingsStore.branchHomologacao }}
               </h3>
+              <div class="mt-4 pt-4 border-t border-app-border-light">
+                <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Testes Finais</p>
+                <p class="text-[9px] text-app-sub mt-0.5">Código validado pronto para homologação.</p>
+              </div>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Ambiente de Testes Finais</p>
-              <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Código validado pronto para homologação.</p>
+            <div class="mt-5 pt-2">
+              <button 
+                @click="runRebuildPipeline('hml')"
+                :disabled="pipelineActive"
+                class="btn btn-primary w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
+              >
+                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
+                Limpar e Recriar HML
+              </button>
             </div>
           </div>
 
           <!-- DESENVOLVIMENTO -->
-          <div class="p-6 bg-white dark:bg-slate-950/40 rounded-[var(--app-card-radius)] border border-slate-200 dark:border-amber-500/10 flex flex-col justify-between shadow-md dark:shadow-none">
+          <div class="app-card-panel flex flex-col justify-between shadow-md group">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Desenvolvimento</span>
+                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Desenvolvimento</span>
                 <div class="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
               </div>
-              <h3 class="text-xl font-black text-slate-800 dark:text-white font-mono text-amber-400 truncate" :title="settingsStore.branchDesenvolvimento">
+              <h3 class="text-xl font-black text-app-main font-mono text-amber-500 dark:text-amber-400 truncate" :title="settingsStore.branchDesenvolvimento">
                 {{ settingsStore.branchDesenvolvimento }}
               </h3>
+              <div class="mt-4 pt-4 border-t border-app-border-light">
+                <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Integração Diária</p>
+                <p class="text-[9px] text-app-sub mt-0.5 font-medium">Reunião contínua de funcionalidades em desenvolvimento.</p>
+              </div>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Ambiente de Integração Diária</p>
-              <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium">Reunião contínua de funcionalidades em desenvolvimento.</p>
+            <div class="mt-5 pt-2">
+              <button 
+                @click="runRebuildPipeline('dev')"
+                :disabled="pipelineActive"
+                class="btn btn-warning w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
+              >
+                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
+                Limpar e Recriar DEV
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-6">
-          <button 
-            @click="runRebuildPipeline('dev')"
-            :disabled="pipelineActive"
-            class="btn btn-warning flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider cursor-pointer"
-          >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
-            Recriar {{ settingsStore.branchDesenvolvimento }}
-          </button>
-          
-          <button 
-            @click="runRebuildPipeline('hml')"
-            :disabled="pipelineActive"
-            class="btn btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-xs font-black uppercase tracking-wider cursor-pointer"
-          >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
-            Recriar {{ settingsStore.branchHomologacao }}
-          </button>
-        </div>
-
-        <!-- Pipeline Output Section -->
-        <div v-if="pipelineTarget" class="p-6 md:p-8 bg-slate-950/40 rounded-[var(--app-card-radius)] border border-white/[0.06] space-y-8 animate-fadeIn">
+        <!-- Pipeline Output Section (Persistente) -->
+        <div class="app-card-panel space-y-8 shadow-sm">
           <!-- Pipeline Stepper -->
-          <div class="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-6">
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 1 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 1 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">1</span>
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-app-border-light pb-6">
+            <!-- Passo 1: Backup -->
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 1 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 1 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">1</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Backup</span>
             </div>
-            <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 2 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 2 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">2</span>
+            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
+            <!-- Passo 2: Destruição -->
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 2 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 2 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">2</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Destruição</span>
             </div>
-            <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 3 ? 'text-indigo-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 3 ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-600'">3</span>
+            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
+            <!-- Passo 3: Recriação -->
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 3 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 3 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">3</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Recriação</span>
             </div>
-            <ArrowRight class="w-4 h-4 text-slate-600 shrink-0" />
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 4 ? 'text-emerald-400' : 'text-slate-500'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 4 ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600'">✓</span>
+            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
+            <!-- Passo 4: Concluído -->
+            <div class="flex items-center gap-2.5" :class="pipelineStep >= 4 ? 'text-emerald-600 dark:text-emerald-400' : 'text-app-muted'">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 4 ? 'border-emerald-500 bg-emerald-500/10' : 'border-app-border-light'">✓</span>
               <span class="text-[10px] font-black uppercase tracking-wider">Concluído</span>
             </div>
           </div>
 
-          <!-- Botão de Confirmação de Destruição -->
-          <div v-if="waitingForDestruction" class="p-6 bg-red-500/10 border border-red-500/20 rounded-[var(--app-card-radius)] flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
+          <!-- Botão de Confirmação de Destruição (Protegido e Preservado) -->
+          <div v-if="waitingForDestruction" class="p-6 bg-[#EF5350]/10 border border-[#EF5350]/20 rounded-[var(--app-card-radius)] flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
             <div class="flex items-center gap-4 text-left">
-              <AlertTriangle class="w-8 h-8 text-red-500 shrink-0" />
+              <AlertTriangle class="w-8 h-8 text-[#EF5350] shrink-0" />
               <div>
-                <h4 class="text-sm font-black text-white">Ação Destrutiva Pendente</h4>
-                <p class="text-[10px] text-slate-400 font-medium mt-1 mb-2">Você está prestes a excluir a branch antiga do GitLab para alinhá-la limpa com a master.</p>
-                <code class="px-2.5 py-1 bg-black/40 text-red-400 rounded-[var(--app-input-radius)] text-[10px] font-mono border border-red-500/20 shadow-inner">
+                <h4 class="text-sm font-black text-[#EF5350]">Ação Destrutiva Pendente</h4>
+                <p class="text-[10px] text-app-sub font-medium mt-1 mb-2">Você está prestes a excluir a branch antiga do GitLab para alinhá-la limpa com a master.</p>
+                <code class="px-2.5 py-1 bg-app-solid text-[#EF5350] rounded-[var(--app-input-radius)] text-[10px] font-mono border border-[#EF5350]/20 shadow-inner">
                   git push origin --delete {{ pipelineTarget === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao }}
                 </code>
               </div>
             </div>
             <button 
               @click="confirmDestruction"
-              class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-[var(--app-input-radius)] text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-red-500/20 whitespace-nowrap"
+              class="px-6 py-3 bg-[#EF5350] hover:bg-[#E53935] text-white rounded-[var(--app-input-radius)] text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-[#EF5350]/30 whitespace-nowrap"
             >
               Autorizar Exclusão
             </button>
           </div>
 
-          <!-- Console Git -->
+          <!-- Console Git Persistente -->
           <div class="space-y-4 text-left">
-            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Terminal class="w-4 h-4 text-indigo-400" />
-              Console de Logs Git
-            </h4>
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] font-black text-app-muted uppercase tracking-widest flex items-center gap-2">
+                <Terminal class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                Console de Logs Git
+              </h4>
+              <span v-if="!pipelineActive && !pipelineTarget" class="px-2 py-0.5 rounded-[var(--app-input-radius)] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-widest">
+                Pronto / Ocioso
+              </span>
+            </div>
             <TerminalConsole
               :logs="pipelineLogs"
               :consoleFontSize="settingsStore.consoleFontSize"
-              placeholder="Aguardando início..."
+              placeholder="Aguardando comando... Clique em Recriar HML ou DEV para iniciar a esteira."
               @increase-font-size="increaseFontSize"
               @decrease-font-size="decreaseFontSize"
               class="min-h-[300px] max-h-[300px]"
             />
           </div>
+        </div>
       </div>
-    </div>
 
       <!-- ABA 2: MESCLAR E EXCLUIR BRANCHES -->
       <div v-else-if="activeTab === 'merges'" class="space-y-6 animate-fadeIn flex-1 flex flex-col min-h-0 lg:overflow-hidden overflow-y-auto">

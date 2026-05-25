@@ -82,7 +82,7 @@
   .dark .glass-panel { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
   
   .icon-btn { @apply p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-500/10 transition-all flex items-center justify-center active:scale-90; }
-  .icon-btn.danger:hover { @apply text-red-600 dark:text-red-400 hover:bg-red-500/10; }
+  .icon-btn.danger:hover { @apply text-[#EF5350] hover:bg-[#EF5350]/10; }
   
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-none shadow-none;
@@ -130,7 +130,7 @@
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-red-500/20;
+    @apply bg-[#EF5350] hover:bg-[#E53935] text-white shadow-md hover:shadow-[#EF5350]/20;
   }
 
   .btn-success {

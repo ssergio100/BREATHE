@@ -1,7 +1,7 @@
 <script setup>
 import { 
   History, Search, RefreshCw, ArrowUpDown, 
-  GitBranch, Check, AlertCircle 
+  GitBranch, Check, AlertCircle, User 
 } from 'lucide-vue-next';
 
 defineProps({
@@ -169,6 +169,12 @@ const formatDate = (dateString) => {
             {{ branch.title || 'Último commit ativo' }}
           </p>
         </div>
+
+        <!-- Nome do Desenvolvedor -->
+        <span v-if="branch.authorName" class="text-[10px] font-bold bg-indigo-500/5 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 px-3 py-1 rounded-[var(--app-input-radius)] border border-indigo-500/20 tracking-wide whitespace-nowrap mr-2 shrink-0 flex items-center gap-1.5">
+          <User class="w-3 h-3" />
+          {{ branch.authorName }}
+        </span>
 
         <!-- Data do Último Commit Alinhada à Direita -->
         <span v-if="branch.committedDate" class="text-[10px] font-bold bg-app-surface dark:bg-slate-800/90 text-app-sub px-3 py-1 rounded-[var(--app-input-radius)] border border-app-border-light tracking-wide whitespace-nowrap mr-2 shrink-0">
