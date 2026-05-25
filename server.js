@@ -108,6 +108,22 @@ app.get('/api/terminal/info', (req, res) => {
 // --- ESTÁTICOS ---
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Endpoint para fornecer o horário do servidor para logs e nomes de branches
+app.get('/api/server-time', (req, res) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  res.json({
+    timestamp: `${year}-${month}-${day}_${hours}h${minutes}`,
+    full: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  });
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
     if (err) res.status(404).send('API Breathe 5186');

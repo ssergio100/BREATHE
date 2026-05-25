@@ -474,7 +474,22 @@ const runRebuildPipeline = async (type) => {
 
   // Passo 1: Preparação e Backup
   pipelineStep.value = 1;
-  const timestamp = new Date().toISOString().replace(/T/, '-').replace(/:/g, '').slice(0, 17);
+  
+  let timestamp = "";
+  try {
+    const timeRes = await fetch('http://127.0.0.1:5186/api/server-time');
+    if (timeRes.ok) {
+      const timeData = await timeRes.json();
+      timestamp = timeData.timestamp;
+    } else {
+      throw new Error("Falha na API de tempo");
+    }
+  } catch (e) {
+    // Fallback para o horário local se o servidor falhar por algum motivo
+    const now = new Date();
+    timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+  
   const backupBranchName = `archive/${target}-${timestamp}`;
 
   addPipelineLog(`[Fase 1: Backup] Criando branch de backup '${backupBranchName}' a partir de '${target}'...`, 'info');
@@ -1001,154 +1016,180 @@ const toggleTheme = () => {
 
     <main class="flex-1 md:overflow-hidden overflow-y-auto p-6 md:p-8 lg:py-6 lg:px-10 space-y-6 w-full max-w-full flex flex-col">
       <!-- ABA 1: LIMPEZA E RECRIAÇÃO -->
-      <div v-if="activeTab === 'rebuilder'" class="space-y-8 animate-fadeIn">
-        <!-- Top Cards: Branch Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- MASTER (PROTEGIDA) -->
-          <div data-test="master-card" class="app-card-panel flex flex-col justify-between shadow-md relative overflow-hidden">
-            <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)] border border-emerald-500/20">
-              <Lock class="w-3 h-3" />
-              Protegida
+      <div v-if="activeTab === 'rebuilder'" class="space-y-6 animate-fadeIn flex-1 flex flex-col min-h-0 lg:overflow-hidden overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full flex-1 min-h-0">
+          
+          <!-- Coluna 1: Lista de Ambientes (5 colunas) -->
+          <div class="md:col-span-5 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
+            <div class="flex items-center justify-between h-6 shrink-0">
+              <h4 class="text-[10px] font-black text-app-muted uppercase tracking-widest flex items-center gap-2">
+                <GitBranch class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                Branches de Ambiente
+              </h4>
             </div>
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Master / Produção</span>
-                <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+
+            <!-- Painel Unificado para Status das Branches (Similar ao BranchList) -->
+            <div class="app-card-panel flex flex-col gap-4 max-h-[calc(100vh-280px)] flex-1 min-h-0">
+              <div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
+                <!-- MASTER (PROTEGIDA) -->
+                <div data-test="master-card" class="app-card-panel flex flex-col justify-between shadow-md relative overflow-hidden shrink-0 border-indigo-500/10">
+                  <div class="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)] border border-emerald-500/20">
+                    <Lock class="w-3 h-3" />
+                    Protegida
+                  </div>
+                  <div>
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Master / Produção</span>
+                      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    </div>
+                    <h3 class="text-xl font-black text-app-main font-mono text-emerald-500 dark:text-emerald-400 truncate pr-16" :title="settingsStore.branchMaster">
+                      {{ settingsStore.branchMaster }}
+                    </h3>
+                  </div>
+                  <div class="mt-6 pt-4 border-t border-app-border-light">
+                    <p class="text-[10px] text-app-muted font-bold uppercase">Origem Estável</p>
+                    <p class="text-[9px] text-app-sub mt-0.5 font-medium">Nenhuma ação permitida. Serve como base de segurança e integridade.</p>
+                  </div>
+                </div>
+
+                <!-- HOMOLOGAÇÃO -->
+                <div class="app-card-panel flex flex-col justify-between shadow-md group shrink-0 border-indigo-500/10 hover:border-indigo-500/30 transition-all">
+                  <div>
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Homologação</span>
+                      <div class="w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.3)]"></div>
+                    </div>
+                    <h3 class="text-xl font-black text-app-main font-mono truncate" :title="settingsStore.branchHomologacao">
+                      {{ settingsStore.branchHomologacao }}
+                    </h3>
+                    <div class="mt-4 pt-4 border-t border-app-border-light">
+                      <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Testes Finais</p>
+                      <p class="text-[9px] text-app-sub mt-0.5">Código validado pronto para homologação.</p>
+                    </div>
+                  </div>
+                  <div class="mt-5 pt-2">
+                    <button 
+                      @click="runRebuildPipeline('hml')"
+                      :disabled="pipelineActive"
+                      class="btn btn-primary w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
+                    >
+                      <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
+                      Limpar e Recriar HML
+                    </button>
+                  </div>
+                </div>
+
+                <!-- DESENVOLVIMENTO -->
+                <div class="app-card-panel flex flex-col justify-between shadow-md group shrink-0 border-indigo-500/10 hover:border-indigo-500/30 transition-all">
+                  <div>
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Desenvolvimento</span>
+                      <div class="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+                    </div>
+                    <h3 class="text-xl font-black text-app-main font-mono text-amber-500 dark:text-amber-400 truncate" :title="settingsStore.branchDesenvolvimento">
+                      {{ settingsStore.branchDesenvolvimento }}
+                    </h3>
+                    <div class="mt-4 pt-4 border-t border-app-border-light">
+                      <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Integração Diária</p>
+                      <p class="text-[9px] text-app-sub mt-0.5 font-medium">Reunião contínua de funcionalidades em desenvolvimento.</p>
+                    </div>
+                  </div>
+                  <div class="mt-5 pt-2">
+                    <button 
+                      @click="runRebuildPipeline('dev')"
+                      :disabled="pipelineActive"
+                      class="btn btn-warning w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
+                    >
+                      <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
+                      Limpar e Recriar DEV
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h3 class="text-xl font-black text-app-main font-mono text-emerald-500 dark:text-emerald-400 truncate pr-16" :title="settingsStore.branchMaster">
-                {{ settingsStore.branchMaster }}
-              </h3>
-            </div>
-            <div class="mt-6 pt-4 border-t border-app-border-light">
-              <p class="text-[10px] text-app-muted font-bold uppercase">Origem Estável</p>
-              <p class="text-[9px] text-app-sub mt-0.5 font-medium">Nenhuma ação permitida. Serve como base de segurança e integridade.</p>
             </div>
           </div>
 
-          <!-- HOMOLOGAÇÃO -->
-          <div class="app-card-panel flex flex-col justify-between shadow-md group">
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Homologação</span>
-                <div class="w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.3)]"></div>
-              </div>
-              <h3 class="text-xl font-black text-app-main font-mono truncate" :title="settingsStore.branchHomologacao">
-                {{ settingsStore.branchHomologacao }}
-              </h3>
-              <div class="mt-4 pt-4 border-t border-app-border-light">
-                <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Testes Finais</p>
-                <p class="text-[9px] text-app-sub mt-0.5">Código validado pronto para homologação.</p>
-              </div>
+          <!-- Coluna 2: Status do Pipeline (2 colunas) -->
+          <div class="md:col-span-2 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
+            <div class="flex items-center justify-between h-6 shrink-0">
+              <h4 class="text-[10px] font-black text-app-muted uppercase tracking-widest flex items-center gap-2">
+                <Settings class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                Pipeline
+              </h4>
             </div>
-            <div class="mt-5 pt-2">
-              <button 
-                @click="runRebuildPipeline('hml')"
-                :disabled="pipelineActive"
-                class="btn btn-primary w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
-              >
-                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'hml' }" />
-                Limpar e Recriar HML
-              </button>
+            
+            <div class="app-card-panel flex flex-col gap-6 max-h-[calc(100vh-280px)] flex-1 min-h-0 py-6">
+              <!-- Stepper Vertical para melhor adequação -->
+              <div class="flex flex-col gap-6 flex-1 justify-center px-2">
+                <div class="flex items-center gap-3" :class="pipelineStep >= 1 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+                  <span class="w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-black transition-all" :class="pipelineStep >= 1 ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-app-border-light'">1</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest">Backup</span>
+                </div>
+                <div class="w-0.5 h-6 bg-app-border-light ml-4"></div>
+                <div class="flex items-center gap-3" :class="pipelineStep >= 2 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+                  <span class="w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-black transition-all" :class="pipelineStep >= 2 ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-app-border-light'">2</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest">Destruição</span>
+                </div>
+                <div class="w-0.5 h-6 bg-app-border-light ml-4"></div>
+                <div class="flex items-center gap-3" :class="pipelineStep >= 3 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
+                  <span class="w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-black transition-all" :class="pipelineStep >= 3 ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-app-border-light'">3</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest">Recriação</span>
+                </div>
+                <div class="w-0.5 h-6 bg-app-border-light ml-4"></div>
+                <div class="flex items-center gap-3" :class="pipelineStep >= 4 ? 'text-emerald-600 dark:text-emerald-400' : 'text-app-muted'">
+                  <span class="w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-black transition-all" :class="pipelineStep >= 4 ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'border-app-border-light'">✓</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest">Concluído</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-app-border-light text-center shrink-0">
+                <span class="text-[8px] font-black text-app-muted uppercase tracking-widest">Pipeline Status</span>
+              </div>
             </div>
           </div>
 
-          <!-- DESENVOLVIMENTO -->
-          <div class="app-card-panel flex flex-col justify-between shadow-md group">
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[8px] font-black uppercase tracking-wider rounded-[var(--app-input-radius)]">Desenvolvimento</span>
-                <div class="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
-              </div>
-              <h3 class="text-xl font-black text-app-main font-mono text-amber-500 dark:text-amber-400 truncate" :title="settingsStore.branchDesenvolvimento">
-                {{ settingsStore.branchDesenvolvimento }}
-              </h3>
-              <div class="mt-4 pt-4 border-t border-app-border-light">
-                <p class="text-[10px] text-app-muted font-bold uppercase">Ambiente de Integração Diária</p>
-                <p class="text-[9px] text-app-sub mt-0.5 font-medium">Reunião contínua de funcionalidades em desenvolvimento.</p>
-              </div>
-            </div>
-            <div class="mt-5 pt-2">
-              <button 
-                @click="runRebuildPipeline('dev')"
-                :disabled="pipelineActive"
-                class="btn btn-warning w-full flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm group-hover:shadow-md transition-all"
-              >
-                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': pipelineActive && pipelineTarget === 'dev' }" />
-                Limpar e Recriar DEV
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pipeline Output Section (Persistente) -->
-        <div class="app-card-panel space-y-8 shadow-sm">
-          <!-- Pipeline Stepper -->
-          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-app-border-light pb-6">
-            <!-- Passo 1: Backup -->
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 1 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 1 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">1</span>
-              <span class="text-[10px] font-black uppercase tracking-wider">Backup</span>
-            </div>
-            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
-            <!-- Passo 2: Destruição -->
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 2 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 2 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">2</span>
-              <span class="text-[10px] font-black uppercase tracking-wider">Destruição</span>
-            </div>
-            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
-            <!-- Passo 3: Recriação -->
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 3 ? 'text-indigo-600 dark:text-indigo-400' : 'text-app-muted'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 3 ? 'border-indigo-500 bg-indigo-500/10' : 'border-app-border-light'">3</span>
-              <span class="text-[10px] font-black uppercase tracking-wider">Recriação</span>
-            </div>
-            <ArrowRight class="w-4 h-4 text-app-muted shrink-0 hidden sm:block" />
-            <!-- Passo 4: Concluído -->
-            <div class="flex items-center gap-2.5" :class="pipelineStep >= 4 ? 'text-emerald-600 dark:text-emerald-400' : 'text-app-muted'">
-              <span class="w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-black" :class="pipelineStep >= 4 ? 'border-emerald-500 bg-emerald-500/10' : 'border-app-border-light'">✓</span>
-              <span class="text-[10px] font-black uppercase tracking-wider">Concluído</span>
-            </div>
-          </div>
-
-          <!-- Botão de Confirmação de Destruição (Protegido e Preservado) -->
-          <div v-if="waitingForDestruction" class="p-6 bg-[#EF5350]/10 border border-[#EF5350]/20 rounded-[var(--app-card-radius)] flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
-            <div class="flex items-center gap-4 text-left">
-              <AlertTriangle class="w-8 h-8 text-[#EF5350] shrink-0" />
-              <div>
-                <h4 class="text-sm font-black text-[#EF5350]">Ação Destrutiva Pendente</h4>
-                <p class="text-[10px] text-app-sub font-medium mt-1 mb-2">Você está prestes a excluir a branch antiga do GitLab para alinhá-la limpa com a master.</p>
-                <code class="px-2.5 py-1 bg-app-solid text-[#EF5350] rounded-[var(--app-input-radius)] text-[10px] font-mono border border-[#EF5350]/20 shadow-inner">
-                  git push origin --delete {{ pipelineTarget === 'dev' ? settingsStore.branchDesenvolvimento : settingsStore.branchHomologacao }}
-                </code>
-              </div>
-            </div>
-            <button 
-              @click="confirmDestruction"
-              class="px-6 py-3 bg-[#EF5350] hover:bg-[#E53935] text-white rounded-[var(--app-input-radius)] text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-[#EF5350]/30 whitespace-nowrap"
-            >
-              Autorizar Exclusão
-            </button>
-          </div>
-
-          <!-- Console Git Persistente -->
-          <div class="space-y-4 text-left">
-            <div class="flex items-center justify-between">
+          <!-- Coluna 3: Logs de Execução (5 colunas) -->
+          <div class="md:col-span-5 space-y-4 text-left flex flex-col lg:h-full min-h-0 min-w-0">
+            <div class="flex items-center justify-between h-6 shrink-0">
               <h4 class="text-[10px] font-black text-app-muted uppercase tracking-widest flex items-center gap-2">
                 <Terminal class="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                Console de Logs Git
+                Console de Automação
               </h4>
-              <span v-if="!pipelineActive && !pipelineTarget" class="px-2 py-0.5 rounded-[var(--app-input-radius)] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-widest">
-                Pronto / Ocioso
-              </span>
             </div>
-            <TerminalConsole
-              :logs="pipelineLogs"
-              :consoleFontSize="settingsStore.consoleFontSize"
-              placeholder="Aguardando comando... Clique em Recriar HML ou DEV para iniciar a esteira."
-              @increase-font-size="increaseFontSize"
-              @decrease-font-size="decreaseFontSize"
-              class="min-h-[300px] max-h-[300px]"
-            />
+
+            <!-- Area de Console e Confirmação Pendente (Altura Fixa com Terminal Flexível) -->
+            <div class="flex flex-col flex-1 min-h-0 max-h-[calc(100vh-280px)] overflow-hidden">
+              <!-- Console Git (Encolhe quando a autorização aparece) -->
+              <TerminalConsole
+                :logs="pipelineLogs"
+                :consoleFontSize="settingsStore.consoleFontSize"
+                placeholder="Aguardando comando... Clique em Recriar HML ou DEV para iniciar a esteira."
+                @increase-font-size="increaseFontSize"
+                @decrease-font-size="decreaseFontSize"
+                class="flex-1 min-h-0"
+              />
+
+              <!-- Alerta de Autorização (Aparece na base, encolhendo o terminal para cima) -->
+              <div v-if="waitingForDestruction" class="mt-4 p-4 bg-[#EF5350]/10 border border-[#EF5350]/20 rounded-[var(--app-card-radius)] flex flex-col gap-3 animate-slideUp shrink-0 shadow-lg shadow-[#EF5350]/5">
+                <div class="flex items-start gap-3">
+                  <div class="p-1.5 bg-[#EF5350]/20 rounded-lg shrink-0">
+                    <AlertTriangle class="w-4 h-4 text-[#EF5350]" />
+                  </div>
+                  <div>
+                    <h4 class="text-[10px] font-black text-[#EF5350] uppercase tracking-wider">Autorização Necessária</h4>
+                    <p class="text-[9px] text-app-sub font-medium mt-0.5 leading-relaxed">Confirme a exclusão da branch antiga para prosseguir.</p>
+                  </div>
+                </div>
+                <button 
+                  @click="confirmDestruction"
+                  class="w-full py-2.5 bg-[#EF5350] hover:bg-[#E53935] text-white rounded-[var(--app-input-radius)] text-[10px] font-black uppercase tracking-wider transition-all shadow-lg shadow-[#EF5350]/20 active:scale-[0.98]"
+                >
+                  Autorizar Exclusão no GitLab
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
 
