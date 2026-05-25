@@ -7,7 +7,7 @@ export default defineConfig({
     vue()
   ],
   server: {
-    port: 5185,
+    port: 5500,
     strictPort: true
   },
   test: {

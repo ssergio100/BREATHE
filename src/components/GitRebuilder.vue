@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { 
   RefreshCw, ArrowRight, Terminal,
-  GitBranch, AlertTriangle,
+  GitBranch, AlertTriangle, Check,
   Trash2, Eye, EyeOff, Lock, Settings, Info, CloudLightning,
   Sun, Moon
 } from 'lucide-vue-next';
@@ -114,6 +114,10 @@ const showMergeConfirmModal = ref(false);
 const mergeConfirmTargetBranch = ref('');
 const mergeConfirmTargetType = ref('');
 const mergeConfirmSourceBranch = ref('');
+
+// Estados de Verificação de Merge (Pre-Check)
+const mergeCheckStatus = ref('idle'); // 'idle', 'checking', 'mergeable', 'conflict', 'no_changes', 'error'
+const mergeCheckMessage = ref('');
 
 // Exclusão em lote (Bulk Delete)
 const selectedBranches = ref([]);
@@ -393,6 +397,106 @@ const listAllBranches = async () => {
   branchesFetched.value = true;
 };
 
+const performMergeCheck = async (source, target) => {
+  mergeCheckStatus.value = 'checking';
+  mergeCheckMessage.value = 'Analisando branch e verificando conflitos no GitLab...';
+
+  try {
+    let apiBase = settingsStore.gitlabUrl || 'https://gitlab.com';
+    if (!apiBase.includes('/api/v4')) {
+      const urlObj = new URL(apiBase);
+      apiBase = `${urlObj.protocol}//${urlObj.host}/api/v4`;
+    }
+    const safeProjectId = encodeURIComponent(decodeURIComponent(settingsStore.gitlabProjectId));
+
+    // 1. Verificar se há mudanças (Divergência)
+    const compareUrl = `${apiBase}/projects/${safeProjectId}/repository/compare?from=${encodeURIComponent(target)}&to=${encodeURIComponent(source)}`;
+    const compareRes = await fetch(compareUrl, {
+      method: 'GET',
+      headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+    });
+    
+    if (compareRes.ok) {
+      const compareData = await compareRes.json();
+      if (compareData.commits && compareData.commits.length === 0) {
+        mergeCheckStatus.value = 'no_changes';
+        mergeCheckMessage.value = 'Esta branch já está integrada ou não possui novos commits em relação ao destino.';
+        return;
+      }
+    }
+
+    // 2. Verificar conflitos criando/buscando um Merge Request (sem aceitar)
+    const mrUrl = `${apiBase}/projects/${safeProjectId}/merge_requests`;
+    const mrRes = await fetch(mrUrl, {
+      method: 'POST',
+      headers: {
+        'PRIVATE-TOKEN': settingsStore.gitlabToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        source_branch: source,
+        target_branch: target,
+        title: `Breathe Check: ${source} em ${target}`,
+        remove_source_branch: false
+      })
+    });
+
+    let mrIid = null;
+    if (mrRes.ok) {
+      const mrData = await mrRes.json();
+      mrIid = mrData.iid;
+    } else if (mrRes.status === 409) {
+      // Já existe, buscar IID
+      const searchUrl = `${apiBase}/projects/${safeProjectId}/merge_requests?source_branch=${encodeURIComponent(source)}&target_branch=${encodeURIComponent(target)}&state=opened`;
+      const searchRes = await fetch(searchUrl, {
+        method: 'GET',
+        headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        if (searchData.length > 0) mrIid = searchData[0].iid;
+      }
+    }
+
+    if (!mrIid) throw new Error("Não foi possível validar o estado do Merge Request.");
+
+    // Polling rápido para pegar o detailed_merge_status
+    let attempts = 0;
+    while (attempts < 5) {
+      const mrStateUrl = `${apiBase}/projects/${safeProjectId}/merge_requests/${mrIid}`;
+      const mrStateRes = await fetch(mrStateUrl, {
+        method: 'GET',
+        headers: { 'PRIVATE-TOKEN': settingsStore.gitlabToken }
+      });
+
+      if (mrStateRes.ok) {
+        const mrState = await mrStateRes.json();
+        const status = mrState.detailed_merge_status;
+
+        if (status === 'mergeable' || mrState.merge_status === 'can_be_merged') {
+          mergeCheckStatus.value = 'mergeable';
+          mergeCheckMessage.value = 'Merge seguro! Nenhum conflito detectado.';
+          return;
+        } else if (status === 'conflict' || mrState.has_conflicts) {
+          mergeCheckStatus.value = 'conflict';
+          mergeCheckMessage.value = 'CONFLITO DETECTADO! Esta branch não pode ser mesclada automaticamente.';
+          return;
+        }
+      }
+      attempts++;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    // Fallback se demorar muito
+    mergeCheckStatus.value = 'mergeable'; // Assume que se não deu erro imediato, está ok (ou GitLab está lento)
+    mergeCheckMessage.value = 'O GitLab está demorando para responder, mas o MR foi criado e parece estar íntegro.';
+
+  } catch (err) {
+    mergeCheckStatus.value = 'error';
+    mergeCheckMessage.value = `Erro na verificação: ${err.message}`;
+  }
+};
+
 const runMergeToTarget = (targetBranch, targetType) => {
   if (selectedBranches.value.length !== 1) return;
   const branchName = selectedBranches.value[0];
@@ -401,6 +505,9 @@ const runMergeToTarget = (targetBranch, targetType) => {
   mergeConfirmTargetType.value = targetType;
   mergeConfirmSourceBranch.value = branchName;
   showMergeConfirmModal.value = true;
+  
+  // Inicia a verificação assim que o modal abre
+  performMergeCheck(branchName, targetBranch);
 };
 
 const executeMergeAfterConfirm = async () => {
@@ -477,7 +584,7 @@ const runRebuildPipeline = async (type) => {
   
   let timestamp = "";
   try {
-    const timeRes = await fetch('http://127.0.0.1:5186/api/server-time');
+    const timeRes = await fetch('http://127.0.0.1:5501/api/server-time');
     if (timeRes.ok) {
       const timeData = await timeRes.json();
       timestamp = timeData.timestamp;
@@ -1766,6 +1873,7 @@ const toggleTheme = () => {
       :icon="GitBranch"
       okText="Confirmar Mesclagem"
       cancelText="Cancelar"
+      :okDisabled="mergeCheckStatus !== 'mergeable'"
       @close="showMergeConfirmModal = false"
       @cancel="showMergeConfirmModal = false"
       @ok="executeMergeAfterConfirm"
@@ -1779,6 +1887,27 @@ const toggleTheme = () => {
             <span class="font-mono text-indigo-650 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-black/35 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ mergeConfirmSourceBranch }}</span> 
             no ambiente de destino 
             <span class="font-mono text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-black/35 px-1.5 py-0.5 rounded-[var(--app-input-radius)]">{{ mergeConfirmTargetBranch }}</span>.
+          </div>
+        </div>
+
+        <!-- Status da Verificação (Pre-Check) -->
+        <div 
+          class="p-4 rounded-[var(--app-card-radius)] border flex items-start gap-3 transition-all duration-300"
+          :class="{
+            'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10': mergeCheckStatus === 'checking' || mergeCheckStatus === 'idle',
+            'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400': mergeCheckStatus === 'mergeable',
+            'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400': mergeCheckStatus === 'conflict' || mergeCheckStatus === 'error',
+            'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400': mergeCheckStatus === 'no_changes'
+          }"
+        >
+          <RefreshCw v-if="mergeCheckStatus === 'checking'" class="w-5 h-5 animate-spin shrink-0 mt-0.5" />
+          <Check v-else-if="mergeCheckStatus === 'mergeable'" class="w-5 h-5 shrink-0 mt-0.5" />
+          <AlertTriangle v-else-if="mergeCheckStatus === 'conflict' || mergeCheckStatus === 'error'" class="w-5 h-5 shrink-0 mt-0.5" />
+          <Info v-else class="w-5 h-5 shrink-0 mt-0.5" />
+
+          <div class="text-xs font-medium leading-relaxed">
+            <p class="font-black uppercase tracking-widest text-[10px] mb-1">Status da Análise:</p>
+            {{ mergeCheckMessage }}
           </div>
         </div>
       </div>

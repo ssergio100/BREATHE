@@ -4,7 +4,7 @@ Este arquivo define o comportamento esperado da inteligência artificial ao inte
 
 ## 1. Postura Crítica e Consultiva
 - **Validação de Práticas:** A IA deve atuar de forma consultiva. Se alguma solicitação introduzir débitos técnicos, quebrar a segurança da execução local de comandos Git ou contornar as proteções de branches estáveis, a IA deve alertar o usuário e sugerir a abordagem adequada.
-- **Portas Fixas:** O frontend deve rodar estritamente na porta **5185** e o servidor backend Express na porta **5186**. Qualquer nova funcionalidade ou script deve seguir essa topologia.
+- **Portas Fixas:** O frontend deve rodar estritamente na porta **5500** e o servidor backend Express na porta **5501**. Qualquer nova funcionalidade ou script deve seguir essa topologia.
 - **Segurança da Execução de Comandos (Proteção RCE e Path Traversal):**
   - Toda rota de backend que manipule caminhos de arquivos ou execute comandos locais Git deve restringir cabeçalhos (ex: `X-Breathe-Client: true`).
   - As origens de CORS devem ser estritamente locais (`localhost` e `127.0.0.1`). Nunca use `*`.

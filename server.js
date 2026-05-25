@@ -8,12 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 5186;
+const PORT = 5501;
 
-// Configuração de CORS Restrita a Origens de Desenvolvimento Local do Breathe (Porta 5185)
+// Configuração de CORS Restrita a Origens de Desenvolvimento Local do Breathe (Porta 5500)
 const allowedOrigins = [
-  /^http:\/\/localhost:5185$/,
-  /^http:\/\/127\.0\.0\.1:5185$/
+  /^http:\/\/localhost:5500$/,
+  /^http:\/\/127\.0\.0\.1:5500$/
 ];
 
 app.use(cors({
@@ -126,7 +126,7 @@ app.get('/api/server-time', (req, res) => {
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
-    if (err) res.status(404).send('API Breathe 5186');
+    if (err) res.status(404).send('API Breathe 5501');
   });
 });
 
